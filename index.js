@@ -8,7 +8,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { fromLonLat } from 'ol/proj';
 import Geolocation from 'ol/Geolocation';
-import { Style, Circle as CircleStyle, Fill, Stroke } from 'ol/style';
+import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
 import Point from 'ol/geom/Point';
 
 
@@ -101,64 +101,108 @@ $(document).ready(function() {
     }
 
     function refreshReportMap() {
-        showLoadingDialog();
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
 
-        var req = new XMLHttpRequest();
-        req.onload = function() {
-            let data = tryParseJson(req.response);
+                if (!data || !data.reports) {
+                    showSnackbar("제보 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
 
-            if (!data || !data.reports) {
-                closeLoadingDialog();
+                reportSource.clear();
+
+                let reports = data.reports;
+                let lvlColors = ['#00b200', '#ffcd2e', '#fe871b', '#f41800', '#840300'];
+                let time = new Date().getTime();
+
+                for (let report of reports) {
+                    if (report.lvl < 0 || report.lvl >= lvlColors.length) {
+                        continue;
+                    }
+                    
+                    // Calculate opacity.
+                    let minOpacity = 50;
+                    let opacity = 1 - (time - report.created_time * 1000) / (24 * 60 * 60 * 1000);
+                    opacity = Math.round(opacity * (255 - minOpacity) + minOpacity);
+                    opacity = Math.max(Math.min(opacity, 255), minOpacity);
+                    opacity = opacity.toString(16);
+                    if (opacity.length == 1) {
+                        opacity = '0' + opacity;
+                    }
+
+                    let reportFeature = new Feature();
+                    reportFeature.setId(report.id);
+                    reportFeature.set('report', report);
+                    reportFeature.setStyle(new Style({
+                        image: new CircleStyle({
+                            radius: (4 + report.lvl) * 2,
+                            fill: new Fill({
+                                color: lvlColors[report.lvl] + opacity,
+                            })
+                        }),
+                    }));
+                    reportFeature.setGeometry(new Point([report.longitude, report.latitude]));
+
+                    reportSource.addFeature(reportFeature);
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
                 showSnackbar("제보 데이터를 가져올 수 없습니다.");
-                return;
             }
 
-            reportSource.clear();
+            req.open("GET", HOST + "/report-map", true);
+            req.send();
+        });
+    }
 
-            let reports = data.reports;
-            let lvlColors = ['#00b200', '#ffcd2e', '#fe871b', '#f41800', '#840300'];
-            let time = new Date().getTime();
+    function refreshShelterMap() {
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
 
-            for (let report of reports) {
-                if (report.lvl < 0 || report.lvl >= lvlColors.length) {
-                    continue;
-                }
-                
-                // Calculate opacity.
-                let minOpacity = 50;
-                let opacity = 1 - (time - report.created_time * 1000) / (24 * 60 * 60 * 1000);
-                opacity = Math.round(opacity * (255 - minOpacity) + minOpacity);
-                opacity = Math.max(Math.min(opacity, 255), minOpacity);
-                opacity = opacity.toString(16);
-                if (opacity.length == 1) {
-                    opacity = '0' + opacity;
+                if (!data || !data.shelters) {
+                    showSnackbar("대피소 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
                 }
 
-                let reportFeature = new Feature();
-                reportFeature.setId(report.id);
-                reportFeature.set('report', report);
-                reportFeature.setStyle(new Style({
-                    image: new CircleStyle({
-                        radius: (4 + report.lvl) * 2,
-                        fill: new Fill({
-                            color: lvlColors[report.lvl] + opacity,
-                        })
-                    }),
-                }));
-                reportFeature.setGeometry(new Point([report.longitude, report.latitude]));
+                shelterSource.clear();
 
-                reportSource.addFeature(reportFeature);
+                let shelters = data.shelters;
+
+                for (let shelter of shelters) {
+                    let shelterFeature = new Feature();
+                    shelterFeature.set('shelter', shelter);
+                    shelterFeature.setGeometry(new Point(fromLonLat([shelter.longitude, shelter.latitude])));
+                    shelterFeature.setStyle(new Style({
+                        image: new Icon({
+                            anchor: [0.5, 46],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'pixels',
+                            src: 'shelter.png',
+                        }),
+                    }));
+
+                    shelterSource.addFeature(shelterFeature);
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("대피소 데이터를 가져올 수 없습니다.");
             }
 
-            closeLoadingDialog();
-        }
-        req.onerror = function() {
-            closeLoadingDialog();
-            showSnackbar("제보 데이터를 가져올 수 없습니다.");
-        }
-
-        req.open("GET", HOST + "/report-map", true);
-        req.send();
+            req.open("GET", HOST + "/shelter-map", true);
+            req.send();
+        });
     }
 
     function levelToIcon(lvl) {
@@ -274,18 +318,40 @@ $(document).ready(function() {
 
     var reportSource = new VectorSource();
     var reportLayer = new VectorLayer({
-        map: map,
         source: reportSource,
         zIndex: 4,
     });
+    map.addLayer(reportLayer);
 
-    // Get and Show reports to map.
-    refreshReportMap();
+
+    var shelterSource = new VectorSource();
+    var shelterLayer = new VectorLayer({
+        source: shelterSource,
+        zIndex: 3,
+    });
+    map.addLayer(shelterLayer);
+
+    map.on('moveend', (evt) => {
+        let visible = evt.frameState.viewState.zoom > 13;
+        if (shelterLayer.getVisible() != visible) {
+            shelterLayer.setVisible(visible);
+            map.updateSize();
+        }
+    });
+
+
+    // Get and Show data to map.
+    showLoadingDialog();
+    refreshReportMap()
+        .then(() => refreshShelterMap())
+        .finally(closeLoadingDialog);
 
 
     $("#btnTrackLocation").on('click', moveViewToGpsPosition);
     $("#btnRefresh").on('click', function() {
-        refreshReportMap();
+        showLoadingDialog();
+        refreshReportMap()
+            .finally(closeLoadingDialog);
     });
 
 
@@ -456,6 +522,8 @@ $(document).ready(function() {
     var popupReportCloser = document.getElementById("popupReportCloser");
     var popupSelect = document.getElementById("popupSelect");
     var popupSelectCloser = document.getElementById("popupSelectCloser");
+    var popupShelter = document.getElementById("popupShelter");
+    var popupShelterCloser = document.getElementById("popupShelterCloser");
     var reportList = $("#reportList");
 
     var reportOverlay = new Overlay({
@@ -472,6 +540,13 @@ $(document).ready(function() {
             duration: 250
         }
     });
+    var shelterOverlay = new Overlay({
+        element: popupShelter,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
 
     function closePopupReport() {
         reportOverlay.setPosition(undefined);
@@ -483,6 +558,11 @@ $(document).ready(function() {
         popupSelectCloser.blur();
     }
 
+    function closePopupShelter() {
+        shelterOverlay.setPosition(undefined);
+        popupShelterCloser.blur();
+    }
+
     popupReportCloser.onclick = function () {
         closePopupReport();
         return false;
@@ -491,9 +571,14 @@ $(document).ready(function() {
         closePopupSelect();
         return false;
     };
+    popupShelterCloser.onclick = function () {
+        closePopupShelter();
+        return false;
+    };
 
     map.addOverlay(reportOverlay);
     map.addOverlay(selectOverlay);
+    map.addOverlay(shelterOverlay);
 
     function showReportPopup(id, coords) {
         $("#txtReportIdDelete").val(id);
@@ -532,7 +617,6 @@ $(document).ready(function() {
 
             closeLoadingDialog();
 
-            closePopupSelect();
             reportOverlay.setPosition(coords);
         }
         req.onerror = function() {
@@ -542,6 +626,9 @@ $(document).ready(function() {
 
         req.open("GET", HOST + "/report?id=" + id, true);
         req.send();
+
+        closePopupSelect();
+        closePopupShelter();
     }
 
     function showSelectPopup(reports, coords) {
@@ -573,29 +660,45 @@ $(document).ready(function() {
         });
 
         closePopupReport();
+        closePopupShelter();
         selectOverlay.setPosition(coords);
     }
 
+    function showShelterPopup(shelter, coords) {
+        $("#txtShelterName").text(shelter.name);
+        $("#txtShelterInfo").text(`수용: ${shelter.capacity}명, 면적: ${shelter.area}㎡`);
+
+        closePopupReport();
+        closePopupSelect();
+        shelterOverlay.setPosition(coords);
+    }
+
     map.on('singleclick', function (evt) {
-        let searchOptions = {
-            layerFilter: (layer) => layer === reportLayer,
-        }
-
-        let features = [];
+        let reports = [];
+        let shelter = null;
         map.forEachFeatureAtPixel(evt.pixel, function (feat, layer) {
-            features.push(feat);
-        }, searchOptions);
+            if (layer === reportLayer) {
+                reports.push(feat);
+            }
+            else if (layer === shelterLayer) {
+                shelter = feat;
+            }
+        });
 
-        if (features.length >= 2) {
-            showSelectPopup(features.slice(0, 6).map((feat) => feat.get('report')), evt.coordinate);
+        if (shelter !== null) {
+            showShelterPopup(shelter.get('shelter'), shelter.getGeometry().getCoordinates());
         }
-        else if (features.length == 1) {
-            showReportPopup(features[0].getId(), features[0].getGeometry().getCoordinates())
+        else if (reports.length >= 2) {
+            showSelectPopup(reports.slice(0, 6).map((feat) => feat.get('report')), evt.coordinate);
+        }
+        else if (reports.length == 1) {
+            showReportPopup(reports[0].getId(), reports[0].getGeometry().getCoordinates())
         }
         else {
             // Close popups when clicking outside.
             closePopupReport();
             closePopupSelect();
+            closePopupShelter();
         }
     });
 
@@ -634,4 +737,7 @@ $(document).ready(function() {
         req.open("DELETE", HOST + "/report?" + payload, true);
         req.send();
     });
+
+    
+    map.updateSize();
 });
