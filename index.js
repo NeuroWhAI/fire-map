@@ -715,6 +715,7 @@ $(document).ready(function() {
             closeLoadingDialog();
             if (req.status == 200) {
                 closeDeleteDialog();
+                closePopupReport();
                 showSnackbar("삭제되었습니다.");
             }
             else if (req.responseText) {
