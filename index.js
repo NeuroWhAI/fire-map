@@ -349,6 +349,10 @@ $(document).ready(function() {
 
     $("#btnTrackLocation").on('click', moveViewToGpsPosition);
     $("#btnRefresh").on('click', function() {
+        closePopupReport();
+        closePopupSelect();
+        closePopupShelter();
+
         showLoadingDialog();
         refreshReportMap()
             .finally(closeLoadingDialog);
