@@ -332,13 +332,16 @@ $(document).ready(function() {
     });
     map.addLayer(shelterLayer);
 
-    map.on('moveend', (evt) => {
-        let visible = evt.frameState.viewState.zoom > 13;
+    var showShelter = true;
+    function updateShelterVisibility() {
+        let visible = (showShelter && map.getView().getZoom() > 13);
         if (shelterLayer.getVisible() != visible) {
             shelterLayer.setVisible(visible);
             map.updateSize();
         }
-    });
+    }
+
+    map.on('moveend', updateShelterVisibility);
 
 
     // Get and Show data to map.
@@ -744,6 +747,18 @@ $(document).ready(function() {
         req.send();
     });
 
+
+    // Menu
+    $("#menuToggleShelter").on('click', () => {
+        showShelter = !showShelter;
+        updateShelterVisibility();
+
+        if (!showShelter) {
+            closePopupShelter();
+        }
+    })
+
     
+    // Adjust map again.
     map.updateSize();
 });
