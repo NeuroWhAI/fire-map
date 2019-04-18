@@ -143,6 +143,7 @@ $(document).ready(function() {
                                 color: lvlColors[report.lvl] + opacity,
                             })
                         }),
+                        zIndex: report.lvl,
                     }));
                     reportFeature.setGeometry(new Point([report.longitude, report.latitude]));
 
