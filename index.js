@@ -206,6 +206,50 @@ $(document).ready(function() {
         });
     }
 
+    function refreshCctvMap() {
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
+
+                if (!data || !data.cctvs) {
+                    showSnackbar("CCTV 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
+
+                cctvSource.clear();
+
+                let cctvs = data.cctvs;
+
+                for (let tv of cctvs) {
+                    let tvFeature = new Feature();
+                    tvFeature.set('cctv', tv);
+                    tvFeature.setGeometry(new Point(fromLonLat([tv.longitude, tv.latitude])));
+                    tvFeature.setStyle(new Style({
+                        image: new Icon({
+                            anchor: [0.5, 46],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'pixels',
+                            src: 'cctv.png',
+                        }),
+                    }));
+
+                    cctvSource.addFeature(tvFeature);
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("CCTV 데이터를 가져올 수 없습니다.");
+            }
+
+            req.open("GET", HOST + "/cctv-map", true);
+            req.send();
+        });
+    }
+
     function levelToIcon(lvl) {
         const icons = ['mood', 'sentiment_dissatisfied', 'warning', 'whatshot', 'directions_run'];
 
@@ -332,22 +376,46 @@ $(document).ready(function() {
     });
     map.addLayer(shelterLayer);
 
+
+    var cctvSource = new VectorSource();
+    var cctvLayer = new VectorLayer({
+        source: cctvSource,
+        zIndex: 2,
+    });
+    map.addLayer(cctvLayer);
+
+
     var showShelter = true;
-    function updateShelterVisibility() {
-        let visible = (showShelter && map.getView().getZoom() > 13);
+    var showCctv = true;
+    function updateVisibilityByZoom() {
+        let needUpdate = false;
+        let zoom = map.getView().getZoom();
+
+        let visible = (showShelter && zoom > 13);
         if (shelterLayer.getVisible() != visible) {
             shelterLayer.setVisible(visible);
+            needUpdate = true;
+        }
+
+        visible = (showCctv && zoom > 11);
+        if (cctvLayer.getVisible() != visible) {
+            cctvLayer.setVisible(visible);
+            needUpdate = true;
+        }
+
+        if (needUpdate) {
             map.updateSize();
         }
     }
 
-    map.on('moveend', updateShelterVisibility);
+    map.on('moveend', updateVisibilityByZoom);
 
 
     // Get and Show data to map.
     showLoadingDialog();
     refreshReportMap()
         .then(() => refreshShelterMap())
+        .then(() => refreshCctvMap())
         .finally(closeLoadingDialog);
 
 
@@ -356,9 +424,11 @@ $(document).ready(function() {
         closePopupReport();
         closePopupSelect();
         closePopupShelter();
+        closePopupCctv();
 
         showLoadingDialog();
         refreshReportMap()
+            .then(() => refreshCctvMap())
             .finally(closeLoadingDialog);
     });
 
@@ -532,6 +602,8 @@ $(document).ready(function() {
     var popupSelectCloser = document.getElementById("popupSelectCloser");
     var popupShelter = document.getElementById("popupShelter");
     var popupShelterCloser = document.getElementById("popupShelterCloser");
+    var popupCctv = document.getElementById("popupCctv");
+    var popupCctvCloser = document.getElementById("popupCctvCloser");
     var reportList = $("#reportList");
 
     var reportOverlay = new Overlay({
@@ -555,6 +627,13 @@ $(document).ready(function() {
             duration: 250
         }
     });
+    var cctvOverlay = new Overlay({
+        element: popupCctv,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
 
     function closePopupReport() {
         reportOverlay.setPosition(undefined);
@@ -571,6 +650,11 @@ $(document).ready(function() {
         popupShelterCloser.blur();
     }
 
+    function closePopupCctv() {
+        cctvOverlay.setPosition(undefined);
+        popupCctvCloser.blur();
+    }
+
     popupReportCloser.onclick = function () {
         closePopupReport();
         return false;
@@ -583,10 +667,15 @@ $(document).ready(function() {
         closePopupShelter();
         return false;
     };
+    popupCctvCloser.onclick = function () {
+        closePopupCctv();
+        return false;
+    };
 
     map.addOverlay(reportOverlay);
     map.addOverlay(selectOverlay);
     map.addOverlay(shelterOverlay);
+    map.addOverlay(cctvOverlay);
 
     function showReportPopup(id, coords) {
         $("#txtReportIdDelete").val(id);
@@ -637,6 +726,7 @@ $(document).ready(function() {
 
         closePopupSelect();
         closePopupShelter();
+        closePopupCctv();
     }
 
     function showSelectPopup(reports, coords) {
@@ -669,6 +759,7 @@ $(document).ready(function() {
 
         closePopupReport();
         closePopupShelter();
+        closePopupCctv();
         selectOverlay.setPosition(coords);
     }
 
@@ -678,12 +769,34 @@ $(document).ready(function() {
 
         closePopupReport();
         closePopupSelect();
+        closePopupCctv();
         shelterOverlay.setPosition(coords);
+    }
+
+    function showCctvPopup(cctv, coords) {
+        let title = cctv.name;
+        let info = "CCTV";
+
+        let match = /^\[(.+?)\]\s*/g.exec(title);
+        if (match !== null) {
+            title = cctv.name.slice(match[0].length);
+            info = match[1];
+        }
+
+        $("#txtCctvName").text(title);
+        $("#txtCctvInfo").text(info);
+        $("#movCctv").attr('src', cctv.url);
+
+        closePopupReport();
+        closePopupSelect();
+        closePopupShelter();
+        cctvOverlay.setPosition(coords);
     }
 
     map.on('singleclick', function (evt) {
         let reports = [];
         let shelter = null;
+        let cctv = null;
         map.forEachFeatureAtPixel(evt.pixel, function (feat, layer) {
             if (layer === reportLayer) {
                 reports.push(feat);
@@ -691,10 +804,16 @@ $(document).ready(function() {
             else if (layer === shelterLayer) {
                 shelter = feat;
             }
+            else if (layer === cctvLayer) {
+                cctv = feat;
+            }
         });
 
         if (shelter !== null) {
             showShelterPopup(shelter.get('shelter'), shelter.getGeometry().getCoordinates());
+        }
+        else if (cctv !== null) {
+            showCctvPopup(cctv.get('cctv'), cctv.getGeometry().getCoordinates());
         }
         else if (reports.length >= 2) {
             showSelectPopup(reports.slice(0, 8).map((feat) => feat.get('report')), evt.coordinate);
@@ -751,10 +870,18 @@ $(document).ready(function() {
     // Menu
     $("#menuToggleShelter").on('click', () => {
         showShelter = !showShelter;
-        updateShelterVisibility();
+        updateVisibilityByZoom();
 
         if (!showShelter) {
             closePopupShelter();
+        }
+    })
+    $("#menuToggleCctv").on('click', () => {
+        showCctv = !showCctv;
+        updateVisibilityByZoom();
+
+        if (!showCctv) {
+            closePopupCctv();
         }
     })
 

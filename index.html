@@ -66,7 +66,7 @@
             <div id="popupReport" class="ol-popup">
                 <a href="#" id="popupReportCloser" class="ol-popup-closer"></a>
                 <div>
-                    <ul class="mdl-list report-title-box">
+                    <ul class="mdl-list popup-title-box">
                         <li class="mdl-list__item mdl-list__item--two-line">
                             <span class="mdl-list__item-primary-content">
                                 <i id="icoReport" class="material-icons mdl-list__item-avatar">update</i>
@@ -90,7 +90,7 @@
             </div>
             <div id="popupShelter" class="ol-popup">
                 <a href="#" id="popupShelterCloser" class="ol-popup-closer"></a>
-                <ul class="shelter-title-box mdl-list">
+                <ul class="popup-title-box mdl-list">
                     <li class="mdl-list__item mdl-list__item--two-line">
                         <span class="mdl-list__item-primary-content">
                             <i class="material-icons mdl-list__item-avatar">home</i>
@@ -99,6 +99,19 @@
                         </span>
                     </li>
                 </ul>
+            </div>
+            <div id="popupCctv" class="ol-popup">
+                <a href="#" id="popupCctvCloser" class="ol-popup-closer"></a>
+                <ul class="popup-title-box mdl-list">
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                            <i class="material-icons mdl-list__item-avatar">videocam</i>
+                            <span id="txtCctvName">Name</span>
+                            <span id="txtCctvInfo" class="mdl-list__item-sub-title">Information</span>
+                        </span>
+                    </li>
+                </ul>
+                <video id="movCctv" class="cctv-video" autoplay controls></video>
             </div>
             <div class="fab">
                 <i class="material-icons fab-icon">add_location</i>
