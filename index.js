@@ -697,7 +697,7 @@ $(document).ready(function() {
             showShelterPopup(shelter.get('shelter'), shelter.getGeometry().getCoordinates());
         }
         else if (reports.length >= 2) {
-            showSelectPopup(reports.slice(0, 6).map((feat) => feat.get('report')), evt.coordinate);
+            showSelectPopup(reports.slice(0, 8).map((feat) => feat.get('report')), evt.coordinate);
         }
         else if (reports.length == 1) {
             showReportPopup(reports[0].getId(), reports[0].getGeometry().getCoordinates())
