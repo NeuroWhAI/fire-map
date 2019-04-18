@@ -364,7 +364,7 @@ $(document).ready(function() {
     var reportSource = new VectorSource();
     var reportLayer = new VectorLayer({
         source: reportSource,
-        zIndex: 4,
+        zIndex: 2,
     });
     map.addLayer(reportLayer);
 
@@ -372,7 +372,7 @@ $(document).ready(function() {
     var shelterSource = new VectorSource();
     var shelterLayer = new VectorLayer({
         source: shelterSource,
-        zIndex: 3,
+        zIndex: 4,
     });
     map.addLayer(shelterLayer);
 
@@ -380,7 +380,7 @@ $(document).ready(function() {
     var cctvSource = new VectorSource();
     var cctvLayer = new VectorLayer({
         source: cctvSource,
-        zIndex: 2,
+        zIndex: 3,
     });
     map.addLayer(cctvLayer);
 
