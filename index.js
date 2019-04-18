@@ -635,6 +635,13 @@ $(document).ready(function() {
         }
     });
 
+    function closeAllPopups() {
+        closePopupReport();
+        closePopupSelect();
+        closePopupShelter();
+        closePopupCctv();
+    }
+
     function closePopupReport() {
         reportOverlay.setPosition(undefined);
         popupReportCloser.blur();
@@ -678,6 +685,8 @@ $(document).ready(function() {
     map.addOverlay(cctvOverlay);
 
     function showReportPopup(id, coords) {
+        closeAllPopups();
+        
         $("#txtReportIdDelete").val(id);
 
         showLoadingDialog();
@@ -723,13 +732,11 @@ $(document).ready(function() {
 
         req.open("GET", HOST + "/report?id=" + id, true);
         req.send();
-
-        closePopupSelect();
-        closePopupShelter();
-        closePopupCctv();
     }
 
     function showSelectPopup(reports, coords) {
+        closeAllPopups();
+
         let now = new Date().getTime();
 
         const itemMapper = (r) => {
@@ -752,28 +759,27 @@ $(document).ready(function() {
         };
 
         reportList.html(reports.map(itemMapper).join(''));
-
+        
+        reportList.off('click', 'button');
         reportList.on('click', 'button', function(e) {
             showReportPopup(parseInt($(this).attr('report-id')), coords);
         });
 
-        closePopupReport();
-        closePopupShelter();
-        closePopupCctv();
         selectOverlay.setPosition(coords);
     }
 
     function showShelterPopup(shelter, coords) {
+        closeAllPopups();
+
         $("#txtShelterName").text(shelter.name);
         $("#txtShelterInfo").text(`수용: ${shelter.capacity}명, 면적: ${shelter.area}㎡`);
 
-        closePopupReport();
-        closePopupSelect();
-        closePopupCctv();
         shelterOverlay.setPosition(coords);
     }
 
     function showCctvPopup(cctv, coords) {
+        closeAllPopups();
+
         let title = cctv.name;
         let info = "CCTV";
 
@@ -787,13 +793,12 @@ $(document).ready(function() {
         $("#txtCctvInfo").text(info);
         $("#movCctv").attr('src', cctv.url);
 
-        closePopupReport();
-        closePopupSelect();
-        closePopupShelter();
         cctvOverlay.setPosition(coords);
     }
 
     map.on('singleclick', function (evt) {
+        let coords = evt.coordinate;
+
         let reports = [];
         let shelter = null;
         let cctv = null;
@@ -816,16 +821,14 @@ $(document).ready(function() {
             showCctvPopup(cctv.get('cctv'), cctv.getGeometry().getCoordinates());
         }
         else if (reports.length >= 2) {
-            showSelectPopup(reports.slice(0, 8).map((feat) => feat.get('report')), evt.coordinate);
+            showSelectPopup(reports.slice(0, 8).map((feat) => feat.get('report')), coords);
         }
         else if (reports.length == 1) {
             showReportPopup(reports[0].getId(), reports[0].getGeometry().getCoordinates())
         }
         else {
             // Close popups when clicking outside.
-            closePopupReport();
-            closePopupSelect();
-            closePopupShelter();
+            closeAllPopups();
         }
     });
 
