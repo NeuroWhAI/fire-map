@@ -85,6 +85,22 @@ $(document).ready(function() {
         dlgDelete.close();
     }
 
+    var dlgBadReport = document.getElementById("dlgBadReport");
+    if (!dlgBadReport.showModal) {
+        dialogPolyfill.registerDialog(dlgBadReport);
+    }
+    function showBadReportDialog() {
+        refreshBadCaptcha();
+
+        dlgBadReport.showModal();
+    }
+    function closeBadReportDialog() {
+        dlgBadReport.close();
+
+        // Reset form.
+        $("#frmBadReport").each(function() { this.reset(); });
+    }
+
     function moveViewToGpsPosition() {
         let here = positionFeature.getGeometry().getCoordinates();
         map.getView().animate({
@@ -98,6 +114,13 @@ $(document).ready(function() {
     function refreshReportCaptcha() {
         imgCaptcha.attr('src', `${HOST}/captcha?channel=1&${Date.now()}`);
         txtCaptcha.val("");
+    }
+
+    var imgBadCaptcha = $("#imgBadCaptcha");
+    var txtBadCaptcha = $("#txtBadCaptcha");
+    function refreshBadCaptcha() {
+        imgBadCaptcha.attr('src', `${HOST}/captcha?channel=2&${Date.now()}`);
+        txtBadCaptcha.val("");
     }
 
     function refreshReportMap() {
@@ -687,6 +710,7 @@ $(document).ready(function() {
         closeAllPopups();
         
         $("#txtReportIdDelete").val(id);
+        $("#txtBadReportId").val(id);
 
         showLoadingDialog();
 
@@ -887,6 +911,49 @@ $(document).ready(function() {
         }
 
         req.open("DELETE", HOST + "/report?" + payload, true);
+        req.send();
+    });
+
+    $("#btnRefreshBadCaptcha").on('click', () => {
+        refreshBadCaptcha();
+    });
+    $("#btnBadReport").on('click', showBadReportDialog);
+    $("#btnCloseBadDlg").on('click', closeBadReportDialog);
+    $("#btnSubmitBadDlg").on('click', () => {
+        showLoadingDialog();
+
+        let payload = $("#frmBadReport").serialize();
+
+        var req = new XMLHttpRequest();
+        req.onload = function() {
+            closeLoadingDialog();
+            if (req.status == 200) {
+                closeBadReportDialog();
+                showSnackbar("신고되었습니다.");
+            }
+            else if (req.responseText) {
+                refreshBadCaptcha();
+                showSnackbar("오류: " + req.responseText);
+            }
+            else {
+                refreshBadCaptcha();
+                showSnackbar("신고 실패.");
+            }
+        }
+        req.onerror = function() {
+            closeLoadingDialog();
+
+            refreshBadCaptcha();
+
+            if (req.responseText) {
+                showSnackbar("오류: " + req.responseText);
+            }
+            else {
+                showSnackbar("신고 실패.");
+            }
+        }
+
+        req.open("POST", HOST + "/bad-report?" + payload, true);
         req.send();
     });
 

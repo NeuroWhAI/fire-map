@@ -82,10 +82,9 @@
                     </ul>
                     <img id="imgReport" class="report-img" alt="현장 이미지" width="300" height="170">
                     <span class="report-desc" id="txtReportDesc">Description</span>
-                    <div class="report-form-delete">
-                        <button id="btnDeleteReport" class="mdl-button mdl-js-button">
-                            삭제
-                        </button>
+                    <div class="report-form-button-box horizontal-container">
+                        <button id="btnBadReport" class="mdl-button mdl-js-button">신고</button>
+                        <button id="btnDeleteReport" class="mdl-button mdl-js-button">삭제</button>
                     </div>
                 </div>
             </div>
@@ -206,6 +205,34 @@
         <div class="mdl-dialog__actions">
             <button id="btnCloseDeleteDlg" type="button" class="mdl-button">취소</button>
             <button id="btnSubmitDeleteDlg" type="button" class="mdl-button">확인</button>
+        </div>
+    </dialog>
+    <dialog id="dlgBadReport" class="mdl-dialog">
+        <h3 class="mdl-dialog__title">제보 신고하기</h3>
+        <div class="mdl-dialog__content">
+            <form id="frmBadReport">
+                <input hidden type="text" id="txtBadReportId" name="id">
+                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <textarea class="mdl-textfield__input no-resize" type="text" rows="2" id="txtBadReason"
+                        name="reason"></textarea>
+                    <label class="mdl-textfield__label" for="txtBadReason">이유 (선택)</label>
+                </div>
+                <div class="horizontal-container">
+                    <img id="imgBadCaptcha" alt="Captcha" width="148" height="81">
+                    <button type="button" id="btnRefreshBadCaptcha"
+                        class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
+                        <i class="material-icons">refresh</i>
+                    </button>
+                </div>
+                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" id="txtBadCaptcha" name="captcha">
+                    <label class="mdl-textfield__label" for="txtBadCaptcha">자동입력 방지문자</label>
+                </div>
+            </form>
+        </div>
+        <div class="mdl-dialog__actions">
+            <button id="btnCloseBadDlg" type="button" class="mdl-button">취소</button>
+            <button id="btnSubmitBadDlg" type="button" class="mdl-button">확인</button>
         </div>
     </dialog>
     <dialog id="dlgLoading" class="mdl-dialog">

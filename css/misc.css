@@ -94,7 +94,7 @@ html, body, #map-container {
     white-space: pre-line;
 }
 
-.report-form-delete {
+.report-form-button-box {
     float: right;
 }
 
@@ -103,4 +103,8 @@ html, body, #map-container {
     margin: 12px 0 0 0;
     width: 320px;
     height: 240px;
+}
+
+.bad-reason {
+    margin: 0 0 24px 0;
 }
