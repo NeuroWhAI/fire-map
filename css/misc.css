@@ -108,3 +108,7 @@ html, body, #map-container {
 .bad-reason {
     margin: 0 0 24px 0;
 }
+
+.mdl-layout__drawer-button:focus {
+    outline:none;
+}
