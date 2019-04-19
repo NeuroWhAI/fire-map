@@ -95,8 +95,8 @@ $(document).ready(function() {
     }
 
     var imgCaptcha = $("#imgCaptcha");
-    function refreshCaptcha(channel) {
-        imgCaptcha.attr('src', `${HOST}/captcha?channel=${channel}&${Date.now()}`);
+    function refreshReportCaptcha() {
+        imgCaptcha.attr('src', `${HOST}/captcha?channel=1&${Date.now()}`);
         txtCaptcha.val("");
     }
 
@@ -473,7 +473,7 @@ $(document).ready(function() {
 
         // Init form.
         icoReportForm.text(levelToIcon(barLevel.val()));
-        refreshCaptcha(1);
+        refreshReportCaptcha();
 
         fab.off('click');
     }
@@ -535,13 +535,13 @@ $(document).ready(function() {
                     showSnackbar("제보되었습니다.");
                 }
                 else {
-                    refreshCaptcha(1);
+                    refreshReportCaptcha();
                     showSnackbar(data);
                 }
             },
             error: function(xhr, options, err) {
                 closeLoadingDialog();
-                refreshCaptcha(1);
+                refreshReportCaptcha();
 
                 if (xhr.responseText) {
                     showSnackbar("오류: " + xhr.responseText);
@@ -590,8 +590,8 @@ $(document).ready(function() {
     });
 
 
-    $("#btnRefreshCaptcha").on('click', () => {
-        refreshCaptcha(1);
+    $("#btnRefreshReportCaptcha").on('click', () => {
+        refreshReportCaptcha();
     });
 
 
