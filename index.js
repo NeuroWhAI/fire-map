@@ -98,7 +98,7 @@ $(document).ready(function() {
         dlgBadReport.close();
 
         // Reset form.
-        $("#frmBadReport").each(function() { this.reset(); });
+        $("#txtBadReason").val("");
     }
 
     function moveViewToGpsPosition() {
