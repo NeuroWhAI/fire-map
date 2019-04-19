@@ -922,39 +922,34 @@ $(document).ready(function() {
     $("#btnSubmitBadDlg").on('click', () => {
         showLoadingDialog();
 
-        let payload = $("#frmBadReport").serialize();
+        $.ajax({
+            type: 'POST',
+            url: HOST + "/bad-report",
+            data: $("#frmBadReport").serialize(),
+            success: function(data, status, req) {
+                closeLoadingDialog();
 
-        var req = new XMLHttpRequest();
-        req.onload = function() {
-            closeLoadingDialog();
-            if (req.status == 200) {
-                closeBadReportDialog();
-                showSnackbar("신고되었습니다.");
-            }
-            else if (req.responseText) {
+                if (status == 'success') {
+                    closeBadReportDialog(event);
+                    showSnackbar("신고되었습니다.");
+                }
+                else {
+                    refreshBadCaptcha();
+                    showSnackbar(data);
+                }
+            },
+            error: function(xhr, options, err) {
+                closeLoadingDialog();
                 refreshBadCaptcha();
-                showSnackbar("오류: " + req.responseText);
-            }
-            else {
-                refreshBadCaptcha();
-                showSnackbar("신고 실패.");
-            }
-        }
-        req.onerror = function() {
-            closeLoadingDialog();
 
-            refreshBadCaptcha();
-
-            if (req.responseText) {
-                showSnackbar("오류: " + req.responseText);
-            }
-            else {
-                showSnackbar("신고 실패.");
-            }
-        }
-
-        req.open("POST", HOST + "/bad-report?" + payload, true);
-        req.send();
+                if (xhr.responseText) {
+                    showSnackbar("오류: " + xhr.responseText);
+                }
+                else {
+                    showSnackbar("오류: " + err);
+                }
+            },
+        });
     });
 
 
