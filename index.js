@@ -428,7 +428,6 @@ $(document).ready(function() {
 
         showLoadingDialog();
         refreshReportMap()
-            .then(() => refreshCctvMap())
             .finally(closeLoadingDialog);
     });
 
@@ -780,20 +779,42 @@ $(document).ready(function() {
     function showCctvPopup(cctv, coords) {
         closeAllPopups();
 
-        let title = cctv.name;
-        let info = "CCTV";
+        showLoadingDialog();
 
-        let match = /^\[(.+?)\]\s*/g.exec(title);
-        if (match !== null) {
-            title = cctv.name.slice(match[0].length);
-            info = match[1];
+        var req = new XMLHttpRequest();
+        req.onload = function() {
+            let tv = tryParseJson(req.response);
+
+            if (!tv) {
+                closeLoadingDialog();
+                showSnackbar("CCTV 정보를 가져올 수 없습니다.");
+                return;
+            }
+
+            let title = tv.name;
+            let info = "CCTV";
+
+            let match = /^\[(.+?)\]\s*/g.exec(title);
+            if (match !== null) {
+                title = tv.name.slice(match[0].length);
+                info = match[1];
+            }
+
+            $("#txtCctvName").text(title);
+            $("#txtCctvInfo").text(info);
+            $("#movCctv").attr('src', tv.url);
+
+            closeLoadingDialog();
+
+            cctvOverlay.setPosition(coords);
+        }
+        req.onerror = function() {
+            closeLoadingDialog();
+            showSnackbar("CCTV 정보를 가져올 수 없습니다.");
         }
 
-        $("#txtCctvName").text(title);
-        $("#txtCctvInfo").text(info);
-        $("#movCctv").attr('src', cctv.url);
-
-        cctvOverlay.setPosition(coords);
+        req.open("GET", HOST + "/cctv?name=" + encodeURIComponent(cctv.name), true);
+        req.send();
     }
 
     map.on('singleclick', function (evt) {
