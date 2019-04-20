@@ -12,10 +12,11 @@
 $FAB_HEIGHT:640px;      //fab 활성화 시 높이
 $FAB_WIDTH:370px;       //fab 활성화 시 너비
 
-$MOBILE_FAB_HEIGHT:$FAB_HEIGHT * 0.7 + 30px;
+$MOBILE_FAB_HEIGHT:$FAB_HEIGHT * 0.7 + 40px;
 $MOBILE_FAB_WIDTH:$FAB_WIDTH * 0.7;
 
 .fab {
+    z-index:3;
     cursor: pointer;
     border-radius: 50%;
     position: fixed;
@@ -105,7 +106,7 @@ $MOBILE_FAB_WIDTH:$FAB_WIDTH * 0.7;
     padding: 6px 16px;
 }
 
-@media (max-width:500px) {
+@media (max-width:360px) {
     .fab.active {
         width: $MOBILE_FAB_WIDTH;
         height: $MOBILE_FAB_HEIGHT;
