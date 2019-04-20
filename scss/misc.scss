@@ -28,12 +28,13 @@ html, body, #map-container {
 
     .mdl-slider__container {
         .mdl-slider__background-flex {
+            width:calc(100% - 12px);
             margin:0 6px;
         }
 
-        & > * {
-        margin:0;
-        width:calc(100% - 12px);
+        input {
+            width:100%;
+            margin:0;
         }
     }
 }
