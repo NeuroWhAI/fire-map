@@ -12,8 +12,10 @@
 $FAB_HEIGHT:640px;      //fab 활성화 시 높이
 $FAB_WIDTH:370px;       //fab 활성화 시 너비
 
+$MOBILE_FAB_HEIGHT:$FAB_HEIGHT * 0.7 + 30px;
+$MOBILE_FAB_WIDTH:$FAB_WIDTH * 0.7;
+
 .fab {
-    z-index: 5;
     cursor: pointer;
     border-radius: 50%;
     position: fixed;
@@ -35,9 +37,12 @@ $FAB_WIDTH:370px;       //fab 활성화 시 너비
     width: $FAB_WIDTH;
     height: $FAB_HEIGHT;
     box-shadow: 0 25px 35px 0 rgba(0, 0, 0, 0.35);
+    display:flex;
+    flex-direction:column;
     bottom: calc(50% - (#{$FAB_HEIGHT} / 2));
     right: calc(50% - (#{$FAB_WIDTH} / 2));
 }
+
 
 .fab-icon {
     position: absolute;
@@ -73,7 +78,7 @@ $FAB_WIDTH:370px;       //fab 활성화 시 너비
 }
 
 #fab-hdr {
-    position: absolute;
+    position: block;
     width: 100%;
     background: #ff5722;
 }
@@ -84,7 +89,11 @@ $FAB_WIDTH:370px;       //fab 활성화 시 너비
 }
 
 .cntt {
-    padding: 120px 35px 0 35px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+
+    padding: 20px 35px 0 35px;
     color: #757575;
 }
 
@@ -94,4 +103,26 @@ $FAB_WIDTH:370px;       //fab 활성화 시 너비
     bottom: 0;
     margin-bottom: 8px;
     padding: 6px 16px;
+}
+
+@media (max-width:500px) {
+    .fab.active {
+        width: $MOBILE_FAB_WIDTH;
+        height: $MOBILE_FAB_HEIGHT;
+
+        bottom: calc(50% - (#{$MOBILE_FAB_HEIGHT} / 2));
+        right: calc(50% - (#{$MOBILE_FAB_WIDTH} / 2));
+    }
+
+    #fab-hdr > h3 {
+        margin: 10px 0;
+        line-height:30px;
+        font-size:24px;
+    }
+
+    .cntt {
+        padding: 10px 15px 0 15px;
+
+        font-size:12px;
+    }
 }
