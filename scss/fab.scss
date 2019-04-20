@@ -1,4 +1,4 @@
-/* mdl - popup */
+//mdl - popup
 .dark-overlay {
     position: fixed;
     width: 100%;
@@ -8,6 +8,9 @@
     -webkit-transition: all 600ms cubic-bezier(0.200, 0.965, 0.000, 1.005);
     transition: all 600ms cubic-bezier(0.200, 0.965, 0.000, 1.005);
 }
+
+$FAB_HEIGHT:640px;      //fab 활성화 시 높이
+$FAB_WIDTH:370px;       //fab 활성화 시 너비
 
 .fab {
     z-index: 5;
@@ -29,11 +32,11 @@
     cursor: default;
     background: #FFF;
     border-radius: .125em;
-    width: 370px;
-    height: 640px;
+    width: $FAB_WIDTH;
+    height: $FAB_HEIGHT;
     box-shadow: 0 25px 35px 0 rgba(0, 0, 0, 0.35);
-    bottom: calc(50% - 320px);
-    right: calc(50% - 185px);
+    bottom: calc(50% - $FAB_HEIGHT / 2);
+    right: calc(50% - $FAB_WIDTH / 2);
 }
 
 .fab-icon {
