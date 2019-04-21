@@ -1,4 +1,5 @@
 window.$ = window.jQuery = require('jquery');
+import dialogPolyfill from 'dialog-polyfill'
 import 'ol/ol.css';
 import { Map, View, Feature } from 'ol';
 import Overlay from 'ol/Overlay';
@@ -10,6 +11,13 @@ import { fromLonLat } from 'ol/proj';
 import Geolocation from 'ol/Geolocation';
 import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
 import Point from 'ol/geom/Point';
+
+
+if (!Promise.prototype.finally) {
+    Promise.prototype.finally = function(onfinally) {
+        return this.then(onfinally, onfinally);
+    }
+}
 
 
 $(document).ready(function() {
