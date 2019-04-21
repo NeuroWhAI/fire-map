@@ -593,8 +593,13 @@ $(document).ready(function() {
         reader.onload = function() {
             var req = new XMLHttpRequest();
             req.onload = function() {
-                txtFile.val(req.responseText);
                 closeLoadingDialog();
+                if (req.status == 200) {
+                    txtFile.val(req.responseText);
+                }
+                else {
+                    showSnackbar("업로드 실패.");
+                }
             }
             req.onerror = function() {
                 closeLoadingDialog();
