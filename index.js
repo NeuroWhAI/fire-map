@@ -109,13 +109,29 @@ $(document).ready(function() {
         $("#txtBadReason").val("");
     }
 
+    function getGpsPosition() {
+        let geom = positionFeature.getGeometry();
+        if (geom) {
+            return geom.getCoordinates();
+        }
+        else {
+            return null;
+        }
+    }
+
     function moveViewToGpsPosition() {
-        let here = positionFeature.getGeometry().getCoordinates();
-        map.getView().animate({
-            center: here,
-            zoom: 16,
-            duration: 300,
-        });
+        if (!geolocation.getTracking()) {
+            geolocation.setTracking(true);
+        }
+
+        let here = getGpsPosition();
+        if (here) {
+            map.getView().animate({
+                center: here,
+                zoom: 16,
+                duration: 300,
+            });
+        }
     }
 
     var imgCaptcha = $("#imgCaptcha");
@@ -368,7 +384,6 @@ $(document).ready(function() {
             })
         })
     }));
-    positionFeature.setGeometry(new Point(map.getView().getCenter()));
 
     // Track GPS position.
     var firstPosition = true;
@@ -379,7 +394,7 @@ $(document).ready(function() {
 
             if (firstPosition) {
                 firstPosition = false;
-                map.getView().setCenter(coordinates);
+                moveViewToGpsPosition();
             }
         }
     });
@@ -391,8 +406,6 @@ $(document).ready(function() {
             features: [accuracyFeature, positionFeature]
         }),
     });
-
-    geolocation.setTracking(true);
 
 
     var reportSource = new VectorSource();
@@ -549,7 +562,12 @@ $(document).ready(function() {
         
 
         // Fill GPS data.
-        let coords = positionFeature.getGeometry().getCoordinates();
+        let coords = getGpsPosition();
+        if (!coords) {
+            showSnackbar("GPS 위치를 찾을 수 없습니다.");
+            return;
+        }
+
         $("#txtLongitude").val(coords[0]);
         $("#txtLatitude").val(coords[1]);
 
