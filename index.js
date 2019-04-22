@@ -21,7 +21,7 @@ if (!Promise.prototype.finally) {
 
 
 $(document).ready(function() {
-    const HOST = "//localhost:8288";
+    const HOST = "";
 
 
     function tryParseJson(text) {
