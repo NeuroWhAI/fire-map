@@ -149,7 +149,8 @@ $(document).ready(function() {
                 let lvlColors = ['#00b200', '#ffcd2e', '#fe871b', '#f41800', '#840300'];
                 let time = new Date().getTime();
 
-                for (let report of reports) {
+                for (let i = 0; i < reports.length; ++i) {
+                    let report = reports[i];
                     if (report.lvl < 0 || report.lvl >= lvlColors.length) {
                         continue;
                     }
@@ -209,7 +210,8 @@ $(document).ready(function() {
 
                 let shelters = data.shelters;
 
-                for (let shelter of shelters) {
+                for (let i = 0; i < shelters.length; ++i) {
+                    let shelter = shelters[i];
                     let shelterFeature = new Feature();
                     shelterFeature.set('shelter', shelter);
                     shelterFeature.setGeometry(new Point(fromLonLat([shelter.longitude, shelter.latitude])));
@@ -253,7 +255,8 @@ $(document).ready(function() {
 
                 let cctvs = data.cctvs;
 
-                for (let tv of cctvs) {
+                for (let i = 0; i < cctvs.length; ++i) {
+                    let tv = cctvs[i];
                     let tvFeature = new Feature();
                     tvFeature.set('cctv', tv);
                     tvFeature.setGeometry(new Point(fromLonLat([tv.longitude, tv.latitude])));
