@@ -332,6 +332,10 @@ $(document).ready(function() {
     }
 
 
+    // Set fire warning image.
+    $("#imgFireWarning").attr('src', HOST + "/fire-warning");
+
+
     const map = new Map({
         target: 'map-container',
         layers: [
