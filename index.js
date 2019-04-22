@@ -21,6 +21,9 @@ if (!Promise.prototype.finally) {
 
 
 $(document).ready(function() {
+    whenUpdateSize();
+
+
     const HOST = "";
 
 
@@ -1009,3 +1012,17 @@ $(document).ready(function() {
     // Adjust map again.
     map.updateSize();
 });
+
+
+function whenUpdateSize() {
+    let width = $(document).width();
+
+    if (width < 360) {
+        $("#txtAppTitle").text("Maps");
+    }
+    else {
+        $("#txtAppTitle").text("Fire Maps");
+    }
+}
+
+$(window).resize(whenUpdateSize);
