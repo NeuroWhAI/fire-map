@@ -411,8 +411,8 @@ $(document).ready(function() {
             })
         ],
         view: new View({
-            center: fromLonLat([126.97, 37.56]), // Seoul
-            zoom: 16
+            center: fromLonLat([127.931774, 36.453383]),
+            zoom: 7,
         }),
     });
 
