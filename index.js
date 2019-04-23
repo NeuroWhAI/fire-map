@@ -303,6 +303,51 @@ $(document).ready(function() {
         });
     }
 
+    function refreshEventMap() {
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
+
+                if (!data || !data.events) {
+                    showSnackbar("산불 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
+
+                eventSource.clear();
+
+                let events = data.events;
+
+                for (let i = 0; i < events.length; ++i) {
+                    let evt = events[i];
+                    let evtFeature = new Feature();
+                    evtFeature.set('event', evt);
+                    evtFeature.setGeometry(new Point(fromLonLat([evt.longitude, evt.latitude])));
+                    evtFeature.setStyle(new Style({
+                        image: new Icon({
+                            anchor: [0.5, 0.5],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'fraction',
+                            src: statusToIcon(evt.status),
+                        }),
+                    }));
+
+                    eventSource.addFeature(evtFeature);
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("산불 데이터를 가져올 수 없습니다.");
+            }
+
+            req.open("GET", HOST + "/fire-event-map", true);
+            req.send();
+        });
+    }
+
     function levelToIcon(lvl) {
         const icons = ['mood', 'sentiment_dissatisfied', 'warning', 'whatshot', 'directions_run'];
 
@@ -325,6 +370,28 @@ $(document).ready(function() {
 
         if (lvl >= 0 && lvl < desc.length) {
             return desc[lvl];
+        }
+        else {
+            return '';
+        }
+    }
+
+    function statusToText(status) {
+        const statusText = ["진화중", "진화완료", "산불외종료"];
+
+        if (status >= 0 && status < statusText.length) {
+            return statusText[status];
+        }
+        else {
+            return '';
+        }
+    }
+    
+    function statusToIcon(status) {
+        const icons = ["fire.png", "nofire.png", "clear.png"];
+
+        if (status >= 0 && status < icons.length) {
+            return icons[status];
         }
         else {
             return '';
@@ -439,6 +506,14 @@ $(document).ready(function() {
     map.addLayer(cctvLayer);
 
 
+    var eventSource = new VectorSource();
+    var eventLayer = new VectorLayer({
+        source: eventSource,
+        zIndex: 5,
+    });
+    map.addLayer(eventLayer);
+
+
     var showShelter = true;
     var showCctv = true;
     function updateVisibilityByZoom() {
@@ -470,18 +545,17 @@ $(document).ready(function() {
     refreshReportMap()
         .then(() => refreshShelterMap())
         .then(() => refreshCctvMap())
+        .then(() => refreshEventMap())
         .finally(closeLoadingDialog);
 
 
     $("#btnTrackLocation").on('click', moveViewToGpsPosition);
     $("#btnRefresh").on('click', function() {
-        closePopupReport();
-        closePopupSelect();
-        closePopupShelter();
-        closePopupCctv();
+        closeAllPopups();
 
         showLoadingDialog();
         refreshReportMap()
+            .then(() => refreshEventMap())
             .finally(closeLoadingDialog);
     });
 
@@ -667,6 +741,8 @@ $(document).ready(function() {
     var popupShelterCloser = document.getElementById("popupShelterCloser");
     var popupCctv = document.getElementById("popupCctv");
     var popupCctvCloser = document.getElementById("popupCctvCloser");
+    var popupEvent = document.getElementById("popupEvent");
+    var popupEventCloser = document.getElementById("popupEventCloser");
     var reportList = $("#reportList");
 
     var reportOverlay = new Overlay({
@@ -697,12 +773,20 @@ $(document).ready(function() {
             duration: 250
         }
     });
+    var eventOverlay = new Overlay({
+        element: popupEvent,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
 
     function closeAllPopups() {
         closePopupReport();
         closePopupSelect();
         closePopupShelter();
         closePopupCctv();
+        closePopupEvent();
     }
 
     function closePopupReport() {
@@ -725,6 +809,11 @@ $(document).ready(function() {
         popupCctvCloser.blur();
     }
 
+    function closePopupEvent() {
+        eventOverlay.setPosition(undefined);
+        popupEventCloser.blur();
+    }
+
     popupReportCloser.onclick = function () {
         closePopupReport();
         return false;
@@ -741,11 +830,16 @@ $(document).ready(function() {
         closePopupCctv();
         return false;
     };
+    popupEventCloser.onclick = function () {
+        closePopupEvent();
+        return false;
+    };
 
     map.addOverlay(reportOverlay);
     map.addOverlay(selectOverlay);
     map.addOverlay(shelterOverlay);
     map.addOverlay(cctvOverlay);
+    map.addOverlay(eventOverlay);
 
     function showReportPopup(id, coords) {
         closeAllPopups();
@@ -882,12 +976,30 @@ $(document).ready(function() {
         req.send();
     }
 
+    function showEventPopup(event, coords) {
+        closeAllPopups();
+
+        let rawDate = event.date;
+        let date = `${rawDate.substr(0, 4)}-${rawDate.substr(4, 2)}-${rawDate.substr(6, 2)}`;
+
+        let rawTime = event.time;
+        let time = `${rawTime.substr(0, 2)}:${rawTime.substr(2, 2)}:${rawTime.substr(4, 2)}`;
+
+        $("#imgEventStatus").attr('src', HOST + "/" + statusToIcon(event.status));
+        $("#txtEventStatus").text(statusToText(event.status));
+        $("#txtEventTime").text(`${date} ${time}`);
+        $("#txtEventAddress").text(event.address);
+
+        eventOverlay.setPosition(coords);
+    }
+
     map.on('singleclick', function (evt) {
         let coords = evt.coordinate;
 
         let reports = [];
         let shelter = null;
         let cctv = null;
+        let fireEvt = null;
         map.forEachFeatureAtPixel(evt.pixel, function (feat, layer) {
             if (layer === reportLayer) {
                 reports.push(feat);
@@ -898,13 +1010,19 @@ $(document).ready(function() {
             else if (layer === cctvLayer) {
                 cctv = feat;
             }
+            else if (layer === eventLayer) {
+                fireEvt = feat;
+            }
         });
-
+        
         if (shelter !== null) {
             showShelterPopup(shelter.get('shelter'), shelter.getGeometry().getCoordinates());
         }
         else if (cctv !== null) {
             showCctvPopup(cctv.get('cctv'), cctv.getGeometry().getCoordinates());
+        }
+        else if (fireEvt !== null) {
+            showEventPopup(fireEvt.get('event'), fireEvt.getGeometry().getCoordinates());
         }
         else if (reports.length >= 2) {
             showSelectPopup(reports.slice(0, 8).map((feat) => feat.get('report')), coords);

@@ -78,6 +78,7 @@
         <main class="mdl-layout__content">
             <!-- Contents -->
             <div id="map-container"></div>
+
             <div id="popupReport" class="ol-popup">
                 <a href="#" id="popupReportCloser" class="ol-popup-closer"></a>
                 <div>
@@ -127,6 +128,20 @@
                 </ul>
                 <video id="movCctv" class="cctv-video" autoplay controls></video>
             </div>
+            <div id="popupEvent" class="ol-popup">
+                <a href="#" id="popupEventCloser" class="ol-popup-closer"></a>
+                <ul class="popup-title-box mdl-list">
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                            <img id="imgEventStatus" class="mdl-list__item-avatar" alt="산불">
+                            <span id="txtEventStatus">Status</span>
+                            <span id="txtEventTime" class="mdl-list__item-sub-title">Time</span>
+                        </span>
+                    </li>
+                </ul>
+                <span id="txtEventAddress">Address</span>
+            </div>
+
             <div id="snackbar" class="mdl-js-snackbar mdl-snackbar">
                 <div class="mdl-snackbar__text"></div>
                 <button class="mdl-snackbar__action" type="button"></button>
