@@ -900,26 +900,36 @@ $(document).ready(function() {
     function closePopupReport() {
         reportOverlay.setPosition(undefined);
         popupReportCloser.blur();
+
+        restoreWindVisibility();
     }
 
     function closePopupSelect() {
         selectOverlay.setPosition(undefined);
         popupSelectCloser.blur();
+        
+        restoreWindVisibility();
     }
 
     function closePopupShelter() {
         shelterOverlay.setPosition(undefined);
         popupShelterCloser.blur();
+        
+        restoreWindVisibility();
     }
 
     function closePopupCctv() {
         cctvOverlay.setPosition(undefined);
         popupCctvCloser.blur();
+        
+        restoreWindVisibility();
     }
 
     function closePopupEvent() {
         eventOverlay.setPosition(undefined);
         popupEventCloser.blur();
+        
+        restoreWindVisibility();
     }
 
     popupReportCloser.onclick = function () {
@@ -951,6 +961,7 @@ $(document).ready(function() {
 
     function showReportPopup(id, coords) {
         closeAllPopups();
+        windCanvas.hidden = true;
         
         $("#txtReportIdDelete").val(id);
         $("#txtBadReportId").val(id);
@@ -1002,6 +1013,7 @@ $(document).ready(function() {
 
     function showSelectPopup(reports, coords) {
         closeAllPopups();
+        windCanvas.hidden = true;
 
         let now = new Date().getTime();
 
@@ -1036,6 +1048,7 @@ $(document).ready(function() {
 
     function showShelterPopup(shelter, coords) {
         closeAllPopups();
+        windCanvas.hidden = true;
 
         $("#txtShelterName").text(shelter.name);
         $("#txtShelterInfo").text(`수용: ${shelter.capacity}명, 면적: ${shelter.area}㎡`);
@@ -1045,6 +1058,7 @@ $(document).ready(function() {
 
     function showCctvPopup(cctv, coords) {
         closeAllPopups();
+        windCanvas.hidden = true;
 
         showLoadingDialog();
 
@@ -1086,6 +1100,7 @@ $(document).ready(function() {
 
     function showEventPopup(event, coords) {
         closeAllPopups();
+        windCanvas.hidden = true;
 
         let rawDate = event.date;
         let date = `${rawDate.substr(0, 4)}-${rawDate.substr(4, 2)}-${rawDate.substr(6, 2)}`;
@@ -1241,6 +1256,10 @@ $(document).ready(function() {
         windCanvas.hidden = showWind;
         showWind = !showWind;
     });
+
+    function restoreWindVisibility() {
+        windCanvas.hidden = !showWind;
+    }
 
     
     // Adjust map again.
