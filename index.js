@@ -10,6 +10,7 @@ import VectorSource from 'ol/source/Vector';
 import { fromLonLat } from 'ol/proj';
 import Geolocation from 'ol/Geolocation';
 import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
+import { defaults as defaultInteraction } from 'ol/interaction';
 import Point from 'ol/geom/Point';
 
 
@@ -21,9 +22,6 @@ if (!Promise.prototype.finally) {
 
 
 $(document).ready(function() {
-    whenUpdateSize();
-
-
     const HOST = "";
 
 
@@ -414,6 +412,10 @@ $(document).ready(function() {
             center: fromLonLat([127.931774, 36.453383]),
             zoom: 7,
         }),
+        interactions: defaultInteraction({
+            altShiftDragRotate: false,
+            pinchRotate: false,
+        }),
     });
 
 
@@ -516,6 +518,8 @@ $(document).ready(function() {
 
     var showShelter = true;
     var showCctv = true;
+    var showWind = true;
+
     function updateVisibilityByZoom() {
         let needUpdate = false;
         let zoom = map.getView().getZoom();
@@ -537,7 +541,109 @@ $(document).ready(function() {
         }
     }
 
-    map.on('moveend', updateVisibilityByZoom);
+    function updateWindScale() {
+        let data = wind.windData;
+
+        if (!data) {
+            return;
+        }
+
+        let resolution = map.getView().getResolution();
+        let scale = data.resolution / resolution;
+
+        let position = map.getPixelFromCoordinate([data.offset_x, data.offset_y]);
+        if (!position) {
+            return;
+        }
+        position[1] -= data.height * scale;
+
+        let offset = [
+            Math.max(-position[0] / scale, 0),
+            Math.max(-position[1] / scale, 0)
+        ];
+
+        wind.move(position[0], position[1]);
+        wind.offset(offset[0], offset[1]);
+        wind.zoom(scale);
+        wind.reset();
+
+        if (showWind) {
+            windCanvas.hidden = false;
+        }
+    }
+
+    map.on('movestart', function() {
+        windCanvas.hidden = true;
+    });
+    map.on('moveend', function() {
+        updateWindScale();
+        updateVisibilityByZoom();
+    });
+
+
+    let mapContainer = $("#map-container");
+    let windCanvas = document.getElementById("windCanvas");
+    windCanvas.width = mapContainer.width();
+    windCanvas.height = mapContainer.height();
+    
+    const gl = windCanvas.getContext('webgl', {antialiasing: false});
+
+    const wind = window.wind = new WindGL(gl);
+    wind.numParticles = calcNumParticles();
+
+    function calcNumParticles() {
+        return Math.min(Math.floor(mapContainer.width() / 8 * mapContainer.height() / 8),
+            10000);
+    }
+
+    function drawWind() {
+        if (wind.windData && !windCanvas.hidden) {
+            wind.draw();
+        }
+        requestAnimationFrame(drawWind);
+    }
+    drawWind();
+
+    function updateWindCanvasSize() {
+        windCanvas.width = mapContainer.width();
+        windCanvas.height = mapContainer.height();
+        wind.resize();
+
+        wind.numParticles = calcNumParticles();
+    }
+
+    function refreshWind() {
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
+
+                if (!data || !data.width) {
+                    showSnackbar("바람 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
+
+                let windData = data;
+                const windImage = new Image();
+                windData.image = windImage;
+                windImage.src = HOST + "/wind-map?id=" + data.id;
+                windImage.onload = function () {
+                    wind.setWind(windData);
+                    updateWindScale();
+                };
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("바람 데이터를 가져올 수 없습니다.");
+            }
+
+            req.open("GET", HOST + "/wind-map-metadata", true);
+            req.send();
+        });
+    }
 
 
     // Get and Show data to map.
@@ -546,6 +652,7 @@ $(document).ready(function() {
         .then(() => refreshShelterMap())
         .then(() => refreshCctvMap())
         .then(() => refreshEventMap())
+        .then(() => refreshWind())
         .finally(closeLoadingDialog);
 
 
@@ -556,6 +663,7 @@ $(document).ready(function() {
         showLoadingDialog();
         refreshReportMap()
             .then(() => refreshEventMap())
+            .then(() => refreshWind())
             .finally(closeLoadingDialog);
     });
 
@@ -1129,22 +1237,29 @@ $(document).ready(function() {
             closePopupCctv();
         }
     })
+    $("#menuToggleWind").on('click', () => {
+        windCanvas.hidden = showWind;
+        showWind = !showWind;
+    });
 
     
     // Adjust map again.
     map.updateSize();
+
+
+    function whenUpdateSize() {
+        updateWindCanvasSize()
+
+        let width = $(document).width();
+    
+        if (width < 360) {
+            $("#txtAppTitle").text("Maps");
+        }
+        else {
+            $("#txtAppTitle").text("Fire Maps");
+        }
+    }
+    whenUpdateSize();
+    
+    $(window).resize(whenUpdateSize);
 });
-
-
-function whenUpdateSize() {
-    let width = $(document).width();
-
-    if (width < 360) {
-        $("#txtAppTitle").text("Maps");
-    }
-    else {
-        $("#txtAppTitle").text("Fire Maps");
-    }
-}
-
-$(window).resize(whenUpdateSize);

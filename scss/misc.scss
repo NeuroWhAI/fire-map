@@ -1,11 +1,31 @@
-html, body, main, #map-container {
+html, body, main, .map-box, #map-container {
     margin: 0;
     height: 100%;
     width: 100%;
 }
 
+main, .map-box {
+    position: relative;
+}
+
+body, main, .map-box {
+    overflow: hidden;
+}
+
 #map-container {
     background: white;
+}
+
+#map-container, #windCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#windCanvas {
+    margin: 0;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .popup-menu-button {
