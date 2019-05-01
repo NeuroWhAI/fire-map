@@ -593,7 +593,7 @@ $(document).ready(function() {
 
     function calcNumParticles() {
         return Math.min(Math.floor(mapContainer.width() / 8 * mapContainer.height() / 8),
-            10000);
+            4000);
     }
 
     function drawWind() {

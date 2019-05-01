@@ -153,34 +153,19 @@ var quadVert = "precision mediump float;\n\nattribute vec2 a_pos;\n\nvarying vec
 
 var screenFrag = "precision mediump float;\n\nuniform sampler2D u_screen;\nuniform float u_opacity;\n\nvarying vec2 v_tex_pos;\n\nvoid main() {\n    vec4 color = texture2D(u_screen, 1.0 - v_tex_pos);\n    // a hack to guarantee opacity fade out even with a value close to 1.0\n    gl_FragColor = vec4(floor(255.0 * color * u_opacity) / 255.0);\n}\n";
 
-var updateFrag = `
+var windFrag = `
 precision highp float;
 
 uniform sampler2D u_particles;
 uniform sampler2D u_wind;
 uniform vec2 u_wind_res;
-uniform vec2 u_wind_min;
-uniform vec2 u_wind_max;
-uniform float u_rand_seed;
-uniform float u_speed_factor;
-uniform float u_drop_rate;
-uniform float u_drop_rate_bump;
 uniform vec2 u_offset;
-uniform float u_max_wind;
 uniform vec2 u_distortion;
 
 varying vec2 v_tex_pos;
 
-// pseudo-random generator
-const vec3 rand_constants = vec3(12.9898, 78.233, 4375.85453);
-float rand(const vec2 co) {
-    float t = dot(rand_constants.xy, co);
-    return fract(sin(t) * (rand_constants.z + t));
-}
-
 // wind speed lookup; use manual bilinear filtering based on 4 adjacent pixels for smooth interpolation
 vec2 lookup_wind(const vec2 uv) {
-    // return texture2D(u_wind, uv).rg; // lower-res hardware filtering
     vec2 px = 1.0 / u_wind_res;
     vec2 vc = (floor(uv * u_wind_res)) * px;
     vec2 f = fract(uv * u_wind_res);
@@ -192,37 +177,33 @@ vec2 lookup_wind(const vec2 uv) {
 }
 
 void main() {
-    vec4 color = texture2D(u_particles, v_tex_pos);
+    vec4 color = texture2D(u_particles, 1.0 - v_tex_pos);
     vec2 pos = vec2(
         color.r / 255.0 + color.b,
-        color.g / 255.0 + color.a); // decode particle position from pixel RGBA
+        color.g / 255.0 + color.a);
 
-    vec2 velocity = mix(u_wind_min, u_wind_max, lookup_wind(pos / u_distortion + u_offset));
-    float speed_t = min(length(velocity) / u_max_wind, 1.0);
+    vec2 vel = lookup_wind(pos / u_distortion + u_offset);
 
-    vec2 offset = vec2(velocity.x, -velocity.y) * 0.0001 * u_speed_factor;
-
-    // update particle position, wrapping around the date line
-    pos = fract(1.0 + pos - offset);
-
-    // a random seed to use for the particle drop
-    vec2 seed = (pos + v_tex_pos) * u_rand_seed;
-
-    // drop rate is a chance a particle will restart at random position, to avoid degeneration
-    float drop_rate = u_drop_rate + speed_t * u_drop_rate_bump;
-    float drop = step(1.0 - drop_rate, rand(seed));
-
-    vec2 random_pos = vec2(
-        rand(seed + 1.3),
-        rand(seed + 2.1));
-    pos = mix(pos, random_pos, drop);
-
-    // encode the new particle position back into RGBA
     gl_FragColor = vec4(
-        fract(pos * 255.0),
-        floor(pos * 255.0) / 255.0);
+        fract(vel * 255.0),
+        floor(vel * 255.0) / 255.0);
 }
 `;
+
+function fract(num) {
+    return num - Math.floor(num);
+}
+
+function rotateNum(num) {
+    if (num < 0) {
+        return num + 1;
+    }
+    else if (num < 1) {
+        return num;
+    }
+
+    return 1 - num;
+}
 
 var defaultRampColors = {
     0.0: '#3288bd',
@@ -248,7 +229,7 @@ var WindGL = function WindGL(gl) {
 
     this.drawProgram = createProgram(gl, drawVert, drawFrag);
     this.screenProgram = createProgram(gl, quadVert, screenFrag);
-    this.updateProgram = createProgram(gl, quadVert, updateFrag);
+    this.windProgram = createProgram(gl, quadVert, windFrag);
 
     this.quadBuffer = createBuffer(gl, new Float32Array([0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1]));
     this.framebuffer = gl.createFramebuffer();
@@ -315,9 +296,19 @@ prototypeAccessors.numParticles.set = function (numParticles) {
     var particleRes = this.particleStateResolution = Math.ceil(Math.sqrt(numParticles));
     this._numParticles = particleRes * particleRes;
 
-    var particleState = new Uint8Array(this._numParticles * 4);
-    for (var i = 0; i < particleState.length; i++) {
-        particleState[i] = Math.floor(Math.random() * 256); // randomize the initial particle positions
+    var particleState = this.particleState = new Uint8Array(this._numParticles * 4);
+    this.particles = new Array(this._numParticles);
+    for (var i = 0; i < this.particles.length; i++) {
+        var x = Math.random();
+        var y = Math.random();
+
+        this.particles[i] = [x, y];
+
+        var statusIndex = i * 4;
+        particleState[statusIndex + 0] = Math.floor(fract(x * 255) * 255);
+        particleState[statusIndex + 1] = Math.floor(fract(y * 255) * 255);
+        particleState[statusIndex + 2] = Math.floor(x * 255);
+        particleState[statusIndex + 3] = Math.floor(y * 255);
     }
     // textures to hold the particle state for the current and the next frame
     this.particleStateTexture0 = createTexture(gl, gl.NEAREST, particleState, particleRes, particleRes);
@@ -406,8 +397,8 @@ WindGL.prototype.drawParticles = function drawParticles () {
     gl.uniform2f(program.u_transform, Math.max(this.posX / gl.canvas.width, 0),
         Math.max(this.posY / gl.canvas.height, 0));
 
-    gl.uniform2f(program.u_offset, this.offsetX * gl.canvas.width / this.windData.width / gl.canvas.width,
-        this.offsetY * gl.canvas.height / this.windData.height / gl.canvas.height);
+    gl.uniform2f(program.u_offset, this.offsetX / this.windData.width,
+        this.offsetY / this.windData.height);
     gl.uniform2fv(program.u_distortion, this.calcDistortion());
 
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
@@ -418,28 +409,65 @@ WindGL.prototype.updateParticles = function updateParticles () {
     bindFramebuffer(gl, this.framebuffer, this.particleStateTexture1);
     gl.viewport(0, 0, this.particleStateResolution, this.particleStateResolution);
 
-    var program = this.updateProgram;
+    var program = this.windProgram;
     gl.useProgram(program.program);
 
     bindAttribute(gl, this.quadBuffer, program.a_pos, 2);
 
     gl.uniform1i(program.u_wind, 0);
     gl.uniform1i(program.u_particles, 1);
-
-    gl.uniform1f(program.u_rand_seed, Math.random());
     gl.uniform2f(program.u_wind_res, this.windData.width, this.windData.height);
-    gl.uniform2f(program.u_wind_min, this.windData.min_x, this.windData.min_y);
-    gl.uniform2f(program.u_wind_max, this.windData.max_x, this.windData.max_y);
-    gl.uniform1f(program.u_max_wind, this.maxWind);
-    gl.uniform1f(program.u_speed_factor, this.speedFactor);
-    gl.uniform1f(program.u_drop_rate, this.dropRate);
-    gl.uniform1f(program.u_drop_rate_bump, this.dropRateBump);
 
-    gl.uniform2f(program.u_offset, this.offsetX * gl.canvas.width / this.windData.width / gl.canvas.width,
-        this.offsetY * gl.canvas.height / this.windData.height / gl.canvas.height);
+    gl.uniform2f(program.u_offset, this.offsetX / this.windData.width,
+        this.offsetY / this.windData.height);
     gl.uniform2fv(program.u_distortion, this.calcDistortion());
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // Read wind data.
+    var pixels = this.particleState;
+    gl.readPixels(0, 0, this.particleStateResolution, this.particleStateResolution,
+        gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+    // Move particles.
+    var termX = this.windData.max_x - this.windData.min_x;
+    var termY = this.windData.max_y - this.windData.min_y;
+    var pixelOffset = 0;
+    for (var i = 0; i < this.particles.length; ++i) {
+        var part = this.particles[i];
+        var x = part[0];
+        var y = part[1];
+
+        var velX = (pixels[pixelOffset + 0] / 255 + pixels[pixelOffset + 2]) / 255 * termX + this.windData.min_x;
+        var velY = (pixels[pixelOffset + 1] / 255 + pixels[pixelOffset + 3]) / 255 * termY + this.windData.min_y;
+        var length = Math.sqrt(velX * velX + velY * velY);
+        var speed = Math.min(length / this.maxWind, 1.0);
+        var dropRate = this.dropRate + speed * this.dropRateBump;
+        
+        if (Math.random() < dropRate) {
+            x = Math.random();
+            y = Math.random();
+        }
+        else {
+            x = rotateNum(-velX * 0.0001 * this.speedFactor + x);
+            y = rotateNum(velY * 0.0001 * this.speedFactor + y);
+        }
+
+        part[0] = x;
+        part[1] = y;
+
+        pixels[pixelOffset + 0] = Math.floor(fract(x * 255) * 255);
+        pixels[pixelOffset + 1] = Math.floor(fract(y * 255) * 255);
+        pixels[pixelOffset + 2] = Math.floor(x * 255);
+        pixels[pixelOffset + 3] = Math.floor(y * 255);
+
+        pixelOffset += 4;
+    }
+
+    // Apply new particle positions.
+    gl.bindTexture(gl.TEXTURE_2D, this.particleStateTexture1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.particleStateResolution, this.particleStateResolution,
+        0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
     // swap the particle state textures so the new one becomes the current one
     var temp = this.particleStateTexture0;
