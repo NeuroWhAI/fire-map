@@ -405,6 +405,8 @@ WindGL.prototype.drawParticles = function drawParticles () {
 };
 
 WindGL.prototype.updateParticles = function updateParticles () {
+    var distortion = this.calcDistortion();
+
     var gl = this.gl;
     bindFramebuffer(gl, this.framebuffer, this.particleStateTexture1);
     gl.viewport(0, 0, this.particleStateResolution, this.particleStateResolution);
@@ -420,16 +422,26 @@ WindGL.prototype.updateParticles = function updateParticles () {
 
     gl.uniform2f(program.u_offset, this.offsetX / this.windData.width,
         this.offsetY / this.windData.height);
-    gl.uniform2fv(program.u_distortion, this.calcDistortion());
+    gl.uniform2fv(program.u_distortion, distortion);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-
+    
     // Read wind data.
     var pixels = this.particleState;
     gl.readPixels(0, 0, this.particleStateResolution, this.particleStateResolution,
         gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
     // Move particles.
+    var distortionX = distortion[0];
+    var distortionY = distortion[1];
+    if (distortionX > distortionY) {
+        distortionX /= distortionY;
+        distortionY = 1;
+    }
+    else {
+        distortionY /= distortionX;
+        distortionX = 1;
+    }
     var termX = this.windData.max_x - this.windData.min_x;
     var termY = this.windData.max_y - this.windData.min_y;
     var pixelOffset = 0;
@@ -449,8 +461,8 @@ WindGL.prototype.updateParticles = function updateParticles () {
             y = Math.random();
         }
         else {
-            x = rotateNum(-velX * 0.0001 * this.speedFactor + x);
-            y = rotateNum(velY * 0.0001 * this.speedFactor + y);
+            x = rotateNum(-velX * distortionX * 0.0001 * this.speedFactor + x);
+            y = rotateNum(velY * distortionY * 0.0001 * this.speedFactor + y);
         }
 
         part[0] = x;
