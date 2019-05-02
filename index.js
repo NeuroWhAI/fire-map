@@ -570,6 +570,7 @@ $(document).ready(function() {
         blur: 16,
         radius: 16,
         opacity: 0.5,
+        renderMode: 'image',
         weight: 'weight',
     })
 
