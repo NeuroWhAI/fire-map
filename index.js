@@ -7,6 +7,7 @@ import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
+import { Heatmap as HeatmapLayer } from 'ol/layer';
 import { fromLonLat } from 'ol/proj';
 import Geolocation from 'ol/Geolocation';
 import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
@@ -346,6 +347,51 @@ $(document).ready(function() {
         });
     }
 
+    function refreshFireMap() {
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
+
+                if (!data || !data.fires) {
+                    showSnackbar("화재 관측 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
+
+                fireSource.clear();
+
+                let fires = data.fires;
+
+                let now = new Date();
+                let maxHours = 48;
+
+                for (let i = 0; i < fires.length; ++i) {
+                    let fire = fires[i];
+
+                    let ageScale = 1 - Math.min((now - fire.time * 1000) / 1000 / 60 / 60 / maxHours, 1);
+                    let weight = Math.min(fire.bright / 400 * ageScale, 1);
+
+                    let fireFeature = new Feature();
+                    fireFeature.set('fire', fire);
+                    fireFeature.set('weight', weight);
+                    fireFeature.setGeometry(new Point(fromLonLat([fire.longitude, fire.latitude])));
+
+                    fireSource.addFeature(fireFeature);
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("화재 관측 데이터를 가져올 수 없습니다.");
+            }
+
+            req.open("GET", HOST + "/active-fire-map", true);
+            req.send();
+        });
+    }
+
     function levelToIcon(lvl) {
         const icons = ['mood', 'sentiment_dissatisfied', 'warning', 'whatshot', 'directions_run'];
 
@@ -516,6 +562,18 @@ $(document).ready(function() {
     map.addLayer(eventLayer);
 
 
+    var fireSource = new VectorSource();
+    new HeatmapLayer({
+        map: map,
+        source: fireSource,
+        zIndex: 1,
+        blur: 16,
+        radius: 16,
+        opacity: 0.5,
+        weight: 'weight',
+    })
+
+
     var showShelter = true;
     var showCctv = true;
     var showWind = true;
@@ -653,6 +711,7 @@ $(document).ready(function() {
         .then(() => refreshCctvMap())
         .then(() => refreshEventMap())
         .then(() => refreshWind())
+        .then(() => refreshFireMap())
         .finally(closeLoadingDialog);
 
 
@@ -664,6 +723,7 @@ $(document).ready(function() {
         refreshReportMap()
             .then(() => refreshEventMap())
             .then(() => refreshWind())
+            .then(() => refreshFireMap())
             .finally(closeLoadingDialog);
     });
 
