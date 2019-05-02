@@ -650,8 +650,8 @@ $(document).ready(function() {
     wind.numParticles = calcNumParticles();
 
     function calcNumParticles() {
-        return Math.min(Math.floor(mapContainer.width() / 8 * mapContainer.height() / 8),
-            4000);
+        return Math.min(Math.floor(mapContainer.width() / 10 * mapContainer.height() / 10),
+            3000);
     }
 
     function drawWind() {
