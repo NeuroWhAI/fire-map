@@ -365,12 +365,13 @@ $(document).ready(function() {
 
                 let now = new Date();
                 let maxHours = 48;
+                let maxPower = 500;
 
                 for (let i = 0; i < fires.length; ++i) {
                     let fire = fires[i];
 
                     let ageScale = 1 - Math.min((now - fire.time * 1000) / 1000 / 60 / 60 / maxHours, 1);
-                    let weight = Math.min(fire.bright / 400 * ageScale, 1);
+                    let weight = Math.min((fire.bright + fire.power) / maxPower * ageScale, 1);
 
                     let fireFeature = new Feature();
                     fireFeature.set('fire', fire);
@@ -563,8 +564,7 @@ $(document).ready(function() {
 
 
     var fireSource = new VectorSource();
-    new HeatmapLayer({
-        map: map,
+    var fireLayer = new HeatmapLayer({
         source: fireSource,
         zIndex: 1,
         blur: 16,
@@ -573,6 +573,7 @@ $(document).ready(function() {
         renderMode: 'image',
         weight: 'weight',
     })
+    map.addLayer(fireLayer);
 
 
     var showShelter = true;
@@ -912,6 +913,8 @@ $(document).ready(function() {
     var popupCctvCloser = document.getElementById("popupCctvCloser");
     var popupEvent = document.getElementById("popupEvent");
     var popupEventCloser = document.getElementById("popupEventCloser");
+    var popupFire = document.getElementById("popupFire");
+    var popupFireCloser = document.getElementById("popupFireCloser");
     var reportList = $("#reportList");
 
     var reportOverlay = new Overlay({
@@ -949,6 +952,13 @@ $(document).ready(function() {
             duration: 250
         }
     });
+    var fireOverlay = new Overlay({
+        element: popupFire,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
 
     function closeAllPopups() {
         closePopupReport();
@@ -956,6 +966,7 @@ $(document).ready(function() {
         closePopupShelter();
         closePopupCctv();
         closePopupEvent();
+        closePopupFire();
     }
 
     function closePopupReport() {
@@ -993,6 +1004,13 @@ $(document).ready(function() {
         restoreWindVisibility();
     }
 
+    function closePopupFire() {
+        fireOverlay.setPosition(undefined);
+        popupFireCloser.blur();
+        
+        restoreWindVisibility();
+    }
+
     popupReportCloser.onclick = function () {
         closePopupReport();
         return false;
@@ -1013,12 +1031,17 @@ $(document).ready(function() {
         closePopupEvent();
         return false;
     };
+    popupFireCloser.onclick = function () {
+        closePopupFire();
+        return false;
+    };
 
     map.addOverlay(reportOverlay);
     map.addOverlay(selectOverlay);
     map.addOverlay(shelterOverlay);
     map.addOverlay(cctvOverlay);
     map.addOverlay(eventOverlay);
+    map.addOverlay(fireOverlay);
 
     function showReportPopup(id, coords) {
         closeAllPopups();
@@ -1177,6 +1200,17 @@ $(document).ready(function() {
         eventOverlay.setPosition(coords);
     }
 
+    function showFirePopup(fire, coords) {
+        closeAllPopups();
+        hideWindTemporarily();
+
+        $("#txtFireTime").text(formatTime(new Date(fire.time * 1000)));
+        $("#txtFireBright").text(`밝기 : ${fire.bright.toFixed(1)} K`);
+        $("#txtFirePower").text(`방사량 : ${fire.power.toFixed(1)} MW`);
+
+        fireOverlay.setPosition(coords);
+    }
+
     map.on('singleclick', function (evt) {
         let coords = evt.coordinate;
 
@@ -1184,6 +1218,7 @@ $(document).ready(function() {
         let shelter = null;
         let cctv = null;
         let fireEvt = null;
+        let activeFire = null;
         map.forEachFeatureAtPixel(evt.pixel, function (feat, layer) {
             if (layer === reportLayer) {
                 reports.push(feat);
@@ -1196,6 +1231,12 @@ $(document).ready(function() {
             }
             else if (layer === eventLayer) {
                 fireEvt = feat;
+            }
+            else if (layer === fireLayer) {
+                if (activeFire === null
+                    || activeFire.get('weight') < feat.get('weight')) {
+                    activeFire = feat;
+                }
             }
         });
         
@@ -1213,6 +1254,9 @@ $(document).ready(function() {
         }
         else if (reports.length == 1) {
             showReportPopup(reports[0].getId(), reports[0].getGeometry().getCoordinates())
+        }
+        else if (activeFire !== null) {
+            showFirePopup(activeFire.get('fire'), activeFire.getGeometry().getCoordinates());
         }
         else {
             // Close popups when clicking outside.
