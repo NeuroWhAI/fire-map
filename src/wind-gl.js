@@ -207,13 +207,12 @@ function rotateNum(num) {
 
 var defaultRampColors = {
     0.0: '#3288bd',
-    0.1: '#66c2a5',
-    0.2: '#abdda4',
-    0.3: '#e6f598',
-    0.4: '#fee08b',
-    0.5: '#fdae61',
-    0.6: '#f46d43',
-    1.0: '#d53e4f'
+    0.173: '#66c2a5',
+    0.349: '#edc945',
+    0.511: '#fd8815',
+    0.662: '#f46d43',
+    0.845: '#d53e4f',
+    1.0: '#aa3ed5',
 };
 
 var WindGL = function WindGL(gl) {
