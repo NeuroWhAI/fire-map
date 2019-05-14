@@ -13,6 +13,7 @@ import Geolocation from 'ol/Geolocation';
 import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
 import { defaults as defaultInteraction } from 'ol/interaction';
 import Point from 'ol/geom/Point';
+import GeoJSON from 'ol/format/GeoJSON';
 
 
 if (!Promise.prototype.finally) {
@@ -393,6 +394,65 @@ $(document).ready(function() {
         });
     }
 
+    function refreshForecastMap() {
+        return new Promise(function(resolve, reject) {
+            if (forecastSource.getState() != 'ready') {
+                showSnackbar("행정구역 데이터가 준비되지 않았습니다.");
+                reject();
+                return;
+            }
+
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
+
+                if (!data || !data.forecasts) {
+                    showSnackbar("화재위험지수 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
+
+                let forecasts = data.forecasts;
+
+                let lvlToColor = ['#fff0', '#ffdf00', '#ff7200', '#ff0400'];
+
+                for (let i = 0; i < forecasts.length; ++i) {
+                    let fire = forecasts[i];
+
+                    let level = fire.lvl;
+                    if (level < 51) {
+                        level = 0;
+                    }
+                    else if (level < 66) {
+                        level = 1;
+                    }
+                    else if (level < 86) {
+                        level = 2;
+                    }
+                    else {
+                        level = 3;
+                    }
+
+                    let feat = forecastSource.getFeatureById(fire.code);
+                    feat.setStyle(new Style({
+                        fill: new Fill({
+                            color: lvlToColor[level],
+                        }),
+                    }));
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("화재위험지수 데이터를 가져올 수 없습니다.");
+            }
+
+            req.open("GET", HOST + "/fire-forecast-map", true);
+            req.send();
+        });
+    }
+
     function levelToIcon(lvl) {
         const icons = ['mood', 'sentiment_dissatisfied', 'warning', 'whatshot', 'directions_run'];
 
@@ -531,6 +591,42 @@ $(document).ready(function() {
     });
 
 
+    var forecastSource = new VectorSource({
+        format: new GeoJSON(),
+        url: "TL_SCCO_CTPRVN.json",
+    });
+    var forecastLayer = new VectorLayer({
+        map: map,
+        source: forecastSource,
+        zIndex: 0,
+        style: new Style({
+            fill: new Fill({
+                color: '#fff0',
+            }),
+        }),
+        opacity: 0.25,
+    });
+
+    // Init fire forecast sources.
+    (function() {
+        function onForecastSourceChanged() {
+            if (forecastSource.getState() == 'ready') {
+                forecastSource.un('change', onForecastSourceChanged);
+            }
+    
+            let features = forecastSource.getFeatures();
+            for (let i = 0; i < features.length; ++i) {
+                let feat = features[i];
+                feat.setId(feat.get('CTP_KOR_NM'));
+            }
+            
+            refreshForecastMap();
+        }
+
+        forecastSource.on('change', onForecastSourceChanged);
+    })();
+
+
     var reportSource = new VectorSource();
     var reportLayer = new VectorLayer({
         source: reportSource,
@@ -579,6 +675,7 @@ $(document).ready(function() {
     var showShelter = true;
     var showCctv = true;
     var showWind = true;
+    var showForecast = true;
 
     function updateVisibilityByZoom() {
         let needUpdate = false;
@@ -593,6 +690,12 @@ $(document).ready(function() {
         visible = (showCctv && zoom > 11);
         if (cctvLayer.getVisible() != visible) {
             cctvLayer.setVisible(visible);
+            needUpdate = true;
+        }
+
+        visible = (showForecast && zoom < 11);
+        if (forecastLayer.getVisible() != visible) {
+            forecastLayer.setVisible(visible);
             needUpdate = true;
         }
 
@@ -726,6 +829,7 @@ $(document).ready(function() {
             .then(() => refreshEventMap())
             .then(() => refreshWind())
             .then(() => refreshFireMap())
+            .then(() => refreshForecastMap())
             .finally(closeLoadingDialog);
     });
 
@@ -1360,6 +1464,10 @@ $(document).ready(function() {
     $("#menuToggleWind").on('click', () => {
         windCanvas.hidden = showWind;
         showWind = !showWind;
+    });
+    $("#menuToggleForecast").on('click', () => {
+        showForecast = !showForecast;
+        updateVisibilityByZoom();
     });
 
     var hideWindTemp = false;
