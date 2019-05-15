@@ -414,7 +414,7 @@ $(document).ready(function() {
 
                 let forecasts = data.forecasts;
 
-                let lvlToColor = ['#fff0', '#ffdf00', '#ff7200', '#ff0400'];
+                let lvlToColor = ['#005ce6', '#ffdf00', '#ff7200', '#ff0000'];
 
                 for (let i = 0; i < forecasts.length; ++i) {
                     let fire = forecasts[i];
@@ -593,7 +593,7 @@ $(document).ready(function() {
 
     var forecastSource = new VectorSource({
         format: new GeoJSON(),
-        url: "TL_SCCO_CTPRVN.json",
+        url: "TL_SCCO_SIG.json",
     });
     var forecastLayer = new VectorLayer({
         map: map,
@@ -604,7 +604,7 @@ $(document).ready(function() {
                 color: '#fff0',
             }),
         }),
-        opacity: 0.25,
+        opacity: 0.3,
     });
 
     // Init fire forecast sources.
@@ -617,7 +617,7 @@ $(document).ready(function() {
             let features = forecastSource.getFeatures();
             for (let i = 0; i < features.length; ++i) {
                 let feat = features[i];
-                feat.setId(feat.get('CTP_KOR_NM'));
+                feat.setId(feat.get('SIG_CD'));
             }
             
             refreshForecastMap();
