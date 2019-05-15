@@ -599,6 +599,7 @@ $(document).ready(function() {
         map: map,
         source: forecastSource,
         zIndex: 0,
+        renderMode: 'image',
         style: new Style({
             fill: new Fill({
                 color: '#fff0',
