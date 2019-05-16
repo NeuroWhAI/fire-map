@@ -588,6 +588,7 @@ $(document).ready(function() {
         source: new VectorSource({
             features: [accuracyFeature, positionFeature]
         }),
+        zIndex: 99,
     });
     map.addLayer(gpsLayer);
 
