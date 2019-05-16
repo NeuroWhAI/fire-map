@@ -12,7 +12,7 @@ import { fromLonLat } from 'ol/proj';
 import Geolocation from 'ol/Geolocation';
 import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
 import { defaults as defaultInteraction } from 'ol/interaction';
-import Point from 'ol/geom/Point';
+import { Point, Circle } from 'ol/geom';
 import GeoJSON from 'ol/format/GeoJSON';
 
 
@@ -123,15 +123,11 @@ $(document).ready(function() {
     }
 
     function moveViewToGpsPosition() {
-        if (!geolocation.getTracking()) {
-            geolocation.setTracking(true);
-        }
-
         let here = getGpsPosition();
         if (here) {
             map.getView().animate({
                 center: here,
-                zoom: 16,
+                zoom: 15,
                 duration: 300,
             });
         }
@@ -536,14 +532,17 @@ $(document).ready(function() {
     // Circle geometry to show GPS accuracy.
     var accuracyFeature = new Feature();
     var firstLowAcc = true;
-    geolocation.on('change:accuracyGeometry', function () {
+    function onGpsAccuracyChanged() {
         let acc = geolocation.getAccuracy();
+        if (isNaN(acc)) {
+            return;
+        }
+
         if (acc < 20000) {
             accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
-            accuracyFeature.style = null;
         }
         else {
-            accuracyFeature.style = { visibility: 'hidden' };
+            accuracyFeature.setGeometry(null);
 
             if (firstLowAcc) {
                 firstLowAcc = false;
@@ -551,7 +550,8 @@ $(document).ready(function() {
                 showSnackbar(`현재 위치와 ${errKm}km 이상 차이가 날 수 있습니다.`, 3000);
             }
         }
-    });
+    }
+    geolocation.on('change:accuracyGeometry', onGpsAccuracyChanged);
 
     // Point geometry to show GPS position.
     var positionFeature = new Feature();
@@ -570,7 +570,7 @@ $(document).ready(function() {
 
     // Track GPS position.
     var firstPosition = true;
-    geolocation.on('change:position', function () {
+    function onGpsPositionChanged() {
         var coordinates = geolocation.getPosition();
         if (coordinates) {
             positionFeature.setGeometry(new Point(coordinates));
@@ -580,15 +580,81 @@ $(document).ready(function() {
                 moveViewToGpsPosition();
             }
         }
-    });
+    }
+    geolocation.on('change:position', onGpsPositionChanged);
 
     // GPS layer.
-    new VectorLayer({
-        map: map,
+    var gpsLayer = new VectorLayer({
         source: new VectorSource({
             features: [accuracyFeature, positionFeature]
         }),
     });
+    map.addLayer(gpsLayer);
+
+
+    var posGpsFeature = new Feature({
+        geometry: new Circle([0, 0], 2000),
+        style: new Style({
+            fill: new Fill({
+                color: '#fff8'
+            }),
+            stroke: new Stroke({
+                color: '#3399CC',
+                width: 2
+            }),
+        }),
+    });
+
+    var posLayer = new VectorLayer({
+        source: new VectorSource({
+            features: [posGpsFeature]
+        }),
+        zIndex: 99,
+        visible: false,
+    });
+    map.addLayer(posLayer);
+
+    function startGpsPosing() {
+        if (posLayer.getVisible()) {
+            return;
+        }
+
+        let gpsPos = geolocation.getPosition();
+        if (gpsPos) {
+            geolocation.setTracking(false);
+
+            gpsLayer.setVisible(false);
+
+            posGpsFeature.getGeometry().setCenter(gpsPos);
+            posLayer.setVisible(true);
+
+            showSnackbar("영역 안에서 새 위치를 선택하세요.");
+
+            // Move view to see the posing area.
+            map.getView().animate({
+                center: gpsPos,
+                zoom: 13,
+                duration: 300,
+            });
+        }
+    }
+
+    function cancelGpsPosing() {
+        if (posLayer.getVisible()) {
+            posLayer.setVisible(false);
+        }
+        gpsLayer.setVisible(true);
+    }
+
+    function finishGpsPosing(targetCoord) {
+        if (posLayer.getVisible()) {
+            posLayer.setVisible(false);
+
+            positionFeature.setGeometry(new Point(targetCoord));
+            accuracyFeature.setGeometry(null);
+        }
+        gpsLayer.setVisible(true);
+    }
 
 
     var forecastSource = new VectorSource({
@@ -821,7 +887,15 @@ $(document).ready(function() {
         .finally(closeLoadingDialog);
 
 
-    $("#btnTrackLocation").on('click', moveViewToGpsPosition);
+    $("#btnTrackLocation").on('click', function() {
+        firstPosition = true;
+        geolocation.setTracking(true);
+        
+        onGpsPositionChanged();
+        onGpsAccuracyChanged();
+
+        cancelGpsPosing();
+    });
     $("#btnRefresh").on('click', function() {
         closeAllPopups();
 
@@ -871,8 +945,14 @@ $(document).ready(function() {
         fab.addClass('active');
         overlay.addClass('dark-overlay');
         
-        // Move view to GPS position.
-        moveViewToGpsPosition();
+        if (positionFeature.getGeometry()) {
+            // Move view to GPS position.
+            moveViewToGpsPosition();
+        }
+        else {
+            // Track GPS position.
+            geolocation.setTracking(true);
+        }
 
         // Init form.
         icoReportForm.text(levelToIcon(barLevel.val()));
@@ -1319,13 +1399,22 @@ $(document).ready(function() {
     map.on('singleclick', function (evt) {
         let coords = evt.coordinate;
 
+        let gpsEndPosing = false;
+        let gpsPosing = false;
         let reports = [];
         let shelter = null;
         let cctv = null;
         let fireEvt = null;
         let activeFire = null;
+
         map.forEachFeatureAtPixel(evt.pixel, function (feat, layer) {
-            if (layer === reportLayer) {
+            if (feat === posGpsFeature) {
+                gpsEndPosing = true;
+            }
+            else if (feat === positionFeature) {
+                gpsPosing = true;
+            }
+            else if (layer === reportLayer) {
                 reports.push(feat);
             }
             else if (layer === shelterLayer) {
@@ -1345,7 +1434,15 @@ $(document).ready(function() {
             }
         });
         
-        if (shelter !== null) {
+        if (gpsEndPosing) {
+            closeAllPopups();
+            finishGpsPosing(coords);
+        }
+        else if (gpsPosing) {
+            closeAllPopups();
+            startGpsPosing();
+        }
+        else if (shelter !== null) {
             showShelterPopup(shelter.get('shelter'), shelter.getGeometry().getCoordinates());
         }
         else if (cctv !== null) {
@@ -1364,8 +1461,8 @@ $(document).ready(function() {
             showFirePopup(activeFire.get('fire'), activeFire.getGeometry().getCoordinates());
         }
         else {
-            // Close popups when clicking outside.
             closeAllPopups();
+            cancelGpsPosing();
         }
     });
 
