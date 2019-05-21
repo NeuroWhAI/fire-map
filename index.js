@@ -773,11 +773,11 @@ $(document).ready(function() {
     }
 
     function updateWindScale() {
-        let data = wind.windData;
-
-        if (!data) {
+        if (!wind || !wind.windData) {
             return;
         }
+
+        let data = wind.windData;
 
         let resolution = map.getView().getResolution();
         let scale = data.resolution / resolution;
@@ -817,10 +817,16 @@ $(document).ready(function() {
     windCanvas.width = mapContainer.width();
     windCanvas.height = mapContainer.height();
     
+    let wind = null;
     const gl = windCanvas.getContext('webgl', {antialiasing: false});
 
-    const wind = window.wind = new WindGL(gl);
-    wind.numParticles = calcNumParticles();
+    if (gl) {
+        wind = new WindGL(gl);
+        wind.numParticles = calcNumParticles();
+    }
+    else {
+        showSnackbar("바람을 표시할 수 없습니다.");
+    }
 
     function calcNumParticles() {
         return Math.min(Math.floor(mapContainer.width() / 10 * mapContainer.height() / 10),
@@ -833,9 +839,16 @@ $(document).ready(function() {
         }
         requestAnimationFrame(drawWind);
     }
-    drawWind();
+
+    if (wind) {
+        drawWind();
+    }
 
     function updateWindCanvasSize() {
+        if (!wind) {
+            return;
+        }
+
         windCanvas.width = mapContainer.width();
         windCanvas.height = mapContainer.height();
         wind.resize();
@@ -845,6 +858,11 @@ $(document).ready(function() {
 
     function refreshWind() {
         return new Promise(function(resolve, reject) {
+            if (!wind) {
+                resolve();
+                return;
+            }
+
             var req = new XMLHttpRequest();
             req.onload = function() {
                 let data = tryParseJson(req.response);
