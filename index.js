@@ -112,6 +112,19 @@ $(document).ready(function() {
         $("#txtBadReason").val("");
     }
 
+    var dlgScoreShelter = document.getElementById("dlgScoreShelter");
+    if (!dlgScoreShelter.showModal) {
+        dialogPolyfill.registerDialog(dlgScoreShelter);
+    }
+    function showScoreShelterDialog() {
+        refreshScoreCaptcha();
+
+        dlgScoreShelter.showModal();
+    }
+    function closeScoreShelterDialog() {
+        dlgScoreShelter.close();
+    }
+
     function getGpsPosition() {
         let geom = positionFeature.getGeometry();
         if (geom) {
@@ -144,6 +157,13 @@ $(document).ready(function() {
     function refreshBadCaptcha() {
         imgBadCaptcha.attr('src', `${HOST}/captcha?channel=2&${Date.now()}`);
         txtBadCaptcha.val("");
+    }
+
+    var imgScoreCaptcha = $("#imgScoreCaptcha");
+    var txtScoreCaptcha = $("#txtScoreCaptcha");
+    function refreshScoreCaptcha() {
+        imgScoreCaptcha.attr('src', `${HOST}/captcha?channel=4&${Date.now()}`);
+        txtScoreCaptcha.val("");
     }
 
     function refreshReportMap() {
@@ -1355,6 +1375,8 @@ $(document).ready(function() {
     function showShelterPopup(id, coords) {
         closeAllPopups();
         hideWindTemporarily();
+        
+        $("#txtScoreShelterId").val(id);
 
         showLoadingDialog();
 
@@ -1371,6 +1393,8 @@ $(document).ready(function() {
 
             $("#txtShelterName").text(shelter.name);
             $("#txtShelterInfo").text(shelter.info || "정보 없음");
+            $("#bdgGoodShelter").attr('data-badge', shelter.good);
+            $("#bdgBadShelter").attr('data-badge', shelter.bad);
 
             shelterOverlay.setPosition(coords);
         }
@@ -1525,6 +1549,7 @@ $(document).ready(function() {
     });
 
 
+    // Dialog to delete report.
     $("#btnDeleteReport").on('click', showDeleteDialog);
     $("#btnCloseDeleteDlg").on('click', closeDeleteDialog);
     $("#btnSubmitDeleteDlg").on('click', () => {
@@ -1561,6 +1586,7 @@ $(document).ready(function() {
         req.send();
     });
 
+    // Dialog to send bad report.
     $("#btnRefreshBadCaptcha").on('click', () => {
         refreshBadCaptcha();
     });
@@ -1588,6 +1614,53 @@ $(document).ready(function() {
             error: function(xhr, options, err) {
                 closeLoadingDialog();
                 refreshBadCaptcha();
+
+                if (xhr.responseText) {
+                    showSnackbar("오류: " + xhr.responseText);
+                }
+                else {
+                    showSnackbar("오류: " + err);
+                }
+            },
+        });
+    });
+
+    // Dialog to thumb up/down shelter.
+    $("#btnRefreshScoreCaptcha").on('click', () => {
+        refreshScoreCaptcha();
+    });
+    $("#btnGoodShelter").on('click', () => {
+        $("#txtScoreShelter").val(+1);
+        showScoreShelterDialog();
+    });
+    $("#btnBadShelter").on('click', () => {
+        $("#txtScoreShelter").val(-1);
+        showScoreShelterDialog();
+    });
+    $("#btnCloseScoreDlg").on('click', closeScoreShelterDialog);
+    $("#btnSubmitScoreDlg").on('click', () => {
+        showLoadingDialog();
+
+        let payload = $("#frmScoreShelter").serialize();
+
+        $.ajax({
+            type: 'POST',
+            url: HOST + "/eval-shelter?" + payload,
+            success: function(data, status, req) {
+                closeLoadingDialog();
+
+                if (status == 'success') {
+                    closeScoreShelterDialog(event);
+                    showSnackbar("전송되었습니다.");
+                }
+                else {
+                    refreshScoreCaptcha();
+                    showSnackbar(data);
+                }
+            },
+            error: function(xhr, options, err) {
+                closeLoadingDialog();
+                refreshScoreCaptcha();
 
                 if (xhr.responseText) {
                     showSnackbar("오류: " + xhr.responseText);
