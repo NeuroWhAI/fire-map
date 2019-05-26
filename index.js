@@ -224,10 +224,31 @@ $(document).ready(function() {
                 shelterSource.clear();
 
                 let shelters = data.shelters;
+                let scoreIcons = ['shelter.png', 'shelter-soso.png', 'shelter-bad.png'];
 
                 for (let i = 0; i < shelters.length; ++i) {
                     let shelter = shelters[i];
+
+                    let scoreIndex = 0;
+                    if (shelter.good >= shelter.bad) {
+                        if (shelter.bad > shelter.good / 2) {
+                            scoreIndex = 1;
+                        }
+                        else {
+                            scoreIndex = 0;
+                        }
+                    }
+                    else {
+                        if (shelter.good > shelter.bad / 2) {
+                            scoreIndex = 1;
+                        }
+                        else {
+                            scoreIndex = 2;
+                        }
+                    }
+
                     let shelterFeature = new Feature();
+                    shelterFeature.setId(shelter.id);
                     shelterFeature.set('shelter', shelter);
                     shelterFeature.setGeometry(new Point(fromLonLat([shelter.longitude, shelter.latitude])));
                     shelterFeature.setStyle(new Style({
@@ -235,7 +256,7 @@ $(document).ready(function() {
                             anchor: [0.5, 46],
                             anchorXUnits: 'fraction',
                             anchorYUnits: 'pixels',
-                            src: 'shelter.png',
+                            src: scoreIcons[scoreIndex],
                         }),
                     }));
 
@@ -1258,10 +1279,11 @@ $(document).ready(function() {
 
         var req = new XMLHttpRequest();
         req.onload = function() {
+            closeLoadingDialog();
+
             let report = tryParseJson(req.response);
 
             if (!report) {
-                closeLoadingDialog();
                 showSnackbar("제보를 가져올 수 없습니다.");
                 return;
             }
@@ -1286,8 +1308,6 @@ $(document).ready(function() {
                 $("#txtReportDesc").hide();
             }
 
-            closeLoadingDialog();
-
             reportOverlay.setPosition(coords);
         }
         req.onerror = function() {
@@ -1302,8 +1322,6 @@ $(document).ready(function() {
     function showSelectPopup(reports, coords) {
         closeAllPopups();
         hideWindTemporarily();
-
-        let now = new Date().getTime();
 
         const itemMapper = (r) => {
             let time = formatTime(new Date(r.created_time * 1000));
@@ -1334,14 +1352,35 @@ $(document).ready(function() {
         selectOverlay.setPosition(coords);
     }
 
-    function showShelterPopup(shelter, coords) {
+    function showShelterPopup(id, coords) {
         closeAllPopups();
         hideWindTemporarily();
 
-        $("#txtShelterName").text(shelter.name);
-        $("#txtShelterInfo").text(`수용: ${shelter.capacity}명, 면적: ${shelter.area}㎡`);
+        showLoadingDialog();
 
-        shelterOverlay.setPosition(coords);
+        var req = new XMLHttpRequest();
+        req.onload = function() {
+            closeLoadingDialog();
+
+            let shelter = tryParseJson(req.response);
+
+            if (!shelter) {
+                showSnackbar("대피소 정보를 가져올 수 없습니다.");
+                return;
+            }
+
+            $("#txtShelterName").text(shelter.name);
+            $("#txtShelterInfo").text(shelter.info || "정보 없음");
+
+            shelterOverlay.setPosition(coords);
+        }
+        req.onerror = function() {
+            closeLoadingDialog();
+            showSnackbar("대피소 정보를 가져올 수 없습니다.");
+        }
+
+        req.open("GET", HOST + "/shelter?id=" + id, true);
+        req.send();
     }
 
     function showCctvPopup(cctv, coords) {
@@ -1462,7 +1501,7 @@ $(document).ready(function() {
             startGpsPosing();
         }
         else if (shelter !== null) {
-            showShelterPopup(shelter.get('shelter'), shelter.getGeometry().getCoordinates());
+            showShelterPopup(shelter.getId(), shelter.getGeometry().getCoordinates());
         }
         else if (cctv !== null) {
             showCctvPopup(cctv.get('cctv'), cctv.getGeometry().getCoordinates());
