@@ -147,3 +147,25 @@ body, main, .map-box {
 .mdl-layout__drawer-button:focus {
     outline:none;
 }
+
+.report-form-icon {
+    margin: auto 16px auto 24px;
+    font-size: 32px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+$FAB_WIDTH: 370px;
+$MOBILE_FAB_WIDTH: $FAB_WIDTH * 0.77;
+
+.report-dlg {
+    width: $FAB_WIDTH;
+}
+
+@media (max-width: 420px) {
+    .report-dlg {
+        width: $MOBILE_FAB_WIDTH;
+    }
+}

@@ -85,6 +85,33 @@ $(document).ready(function() {
         dlgLoading.close();
     }
 
+    var dlgReport = document.getElementById("dlgReport");
+    if (!dlgReport.showModal) {
+        dialogPolyfill.registerDialog(dlgReport);
+    }
+    function showReportDialog() {
+        dlgReport.showModal();
+    }
+    function closeReportDialog() {
+        closeReportCaptchaDialog();
+
+        dlgReport.close();
+    }
+
+    var dlgReportCaptcha = document.getElementById("dlgReportCaptcha");
+    if (!dlgReportCaptcha.showModal) {
+        dialogPolyfill.registerDialog(dlgReportCaptcha);
+    }
+    function showReportCaptchaDialog() {
+        refreshReportCaptcha();
+        dlgReportCaptcha.showModal();
+    }
+    function closeReportCaptchaDialog() {
+        if (dlgReportCaptcha.open) {
+            dlgReportCaptcha.close();
+        }
+    }
+
     var dlgDelete = document.getElementById("dlgDelete");
     if (!dlgDelete.showModal) {
         dialogPolyfill.registerDialog(dlgDelete);
@@ -149,7 +176,7 @@ $(document).ready(function() {
     var imgCaptcha = $("#imgCaptcha");
     function refreshReportCaptcha() {
         imgCaptcha.attr('src', `${HOST}/captcha?channel=1&${Date.now()}`);
-        txtCaptcha.val("");
+        $("#txtCaptcha").val("");
     }
 
     var imgBadCaptcha = $("#imgBadCaptcha");
@@ -501,13 +528,24 @@ $(document).ready(function() {
         }
     }
 
+    function levelToName(lvl) {
+        const names = ["안전", "주의", "경계", "심각", "대피"];
+
+        if (lvl >= 0 && lvl < names.length) {
+            return names[lvl];
+        }
+        else {
+            return '';
+        }
+    }
+
     function levelToDescription(lvl) {
         const desc = [
-            "안전 : 화재나 우려되는 현상이 없음.",
-            "주의 : 화염, 화광이나 연기가 멀리 있음.",
-            "경계 : 화염, 연기의 구체적인 형태 확인이 가능.",
-            "심각 : 열기가 느껴지거나 불티가 날림.",
-            "대피 : 대피령, 개인 판단으로 떠나야 하는 위치."
+            "화재나 우려되는 현상이 없음.",
+            "화염, 화광이나 연기가 멀리 있음.",
+            "화염, 연기의 구체적 형태 확인 가능.",
+            "열기가 느껴지거나 불티가 날림.",
+            "대피령, 개인 판단으로 떠나야 함."
         ];
 
         if (lvl >= 0 && lvl < desc.length) {
@@ -966,11 +1004,13 @@ $(document).ready(function() {
 
 
     var barLevel = $("#barLevel");
-    var txtLevel = $("#txtLevel");
+    var txtLevelName = $("#txtLevelName");
+    var txtLevelDesc = $("#txtLevelDesc");
     var icoReportForm = $("#icoForm");
 
     function onChangeLevel() {
-        txtLevel.text(levelToDescription(barLevel.val()));
+        txtLevelName.text(levelToName(barLevel.val()));
+        txtLevelDesc.text(levelToDescription(barLevel.val()));
         icoReportForm.text(levelToIcon(barLevel.val()));
     }
     onChangeLevel();
@@ -979,28 +1019,28 @@ $(document).ready(function() {
     barLevel.on('change', onChangeLevel);
 
 
-    var txtDesc = $("#txtDesc"),
-        txtCaptcha = $("#txtCaptcha"),
-        txtUserId = $("#txtUserId"),
-        txtUserPwd = $("#txtUserPwd");
+    (function() {
+        var VISIBLE_CLASS = 'is-showing-options',
+        fab_btn = document.getElementById("fab_btn"),
+        fab_ctn = document.getElementById("fab_ctn"),
+        showOpts = function(e) {
+            var processClick = function(evt) {
+                if (e !== evt) {
+                    fab_ctn.classList.remove(VISIBLE_CLASS);
+                    fab_ctn.IS_SHOWING = false;
+                    document.removeEventListener('click', processClick);
+                }
+            };
+            if (!fab_ctn.IS_SHOWING) {
+            fab_ctn.IS_SHOWING = true;
+            fab_ctn.classList.add(VISIBLE_CLASS);
+            document.addEventListener('click', processClick);
+            }
+        };
+        fab_btn.addEventListener('click', showOpts);
+    })();
 
-
-    var overlay = $("#overlay"),
-        fab = $(".fab"),
-        cancel = $("#cancel"),
-        btnSubmit = $("#btnSubmit");
-    
-    // fab click
-    fab.on('click', openFAB);
-    overlay.on('click', closeFAB);
-    cancel.on('click', closeFAB);
-    btnSubmit.on('click', submitReport);
-
-    function openFAB(event) {
-        if (event) event.preventDefault();
-        fab.addClass('active');
-        overlay.addClass('dark-overlay');
-        
+    $("#btnFabReport").click(function() {
         if (positionFeature.getGeometry()) {
             // Move view to GPS position.
             moveViewToGpsPosition();
@@ -1011,30 +1051,33 @@ $(document).ready(function() {
         }
 
         // Init form.
-        icoReportForm.text(levelToIcon(barLevel.val()));
-        refreshReportCaptcha();
+        onChangeLevel();
 
-        fab.off('click');
-    }
-    
-    function closeFAB(event) {
-        if (event) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-        }
-    
-        fab.removeClass('active');
-        overlay.removeClass('dark-overlay');
+        showReportDialog();
+    });
 
-        fab.on('click', openFAB);
-    }
+    $("#btnFabShelter").click(function() {
+       // TODO: 대피소 등록 화면 띄우기.
+    });
+
+
+    $("#btnCancelReport").click(closeReportDialog);
+    $("#btnConfirmReport").click(showReportCaptchaDialog);
     
+    $("#btnCancelReportCaptcha").click(closeReportCaptchaDialog);
+    $("#btnSubmitReport").click(submitReport);
+    $("#btnRefreshReportCaptcha").on('click', refreshReportCaptcha);
+
     function submitReport(event) {
-        // 데이터 검증
+        let txtCaptcha = $("#txtCaptcha");
+        let txtUserId = $("#txtUserId");
+        let txtUserPwd = $("#txtUserPwd");
+
         let captchaText = txtCaptcha.val();
         let userId = txtUserId.val();
         let userPwd = txtUserPwd.val();
 
+        // 데이터 검증
         if (captchaText.length == 0) {
             showSnackbar("자동입력 방지문자를 입력하세요.");
             return;
@@ -1070,12 +1113,13 @@ $(document).ready(function() {
         $.ajax({
             type: 'POST',
             url: HOST + "/report",
-            data: $("#frmReport").serialize(),
+            data: $("#frmReport").serialize() + "&" + $("#frmReportCaptcha").serialize(),
             success: function(data, status, req) {
                 closeLoadingDialog();
+                closeReportCaptchaDialog();
 
                 if (status == 'success') {
-                    closeFAB(event);
+                    closeReportDialog();
                     showSnackbar("제보되었습니다.");
                 }
                 else {
@@ -1085,7 +1129,7 @@ $(document).ready(function() {
             },
             error: function(xhr, options, err) {
                 closeLoadingDialog();
-                refreshReportCaptcha();
+                closeReportCaptchaDialog();
 
                 if (xhr.responseText) {
                     showSnackbar("오류: " + xhr.responseText);
@@ -1098,10 +1142,7 @@ $(document).ready(function() {
     }
 
 
-    var btnUpload = $("#btnUpload");
-    var txtFile = $("#txtFile");
-
-    btnUpload.on('change', (e) => {
+    $("#btnUpload").on('change', (e) => {
         let files = e.target.files;
 
         if (!files || files.length == 0 || !files[0]) {
@@ -1116,7 +1157,7 @@ $(document).ready(function() {
             req.onload = function() {
                 closeLoadingDialog();
                 if (req.status == 200) {
-                    txtFile.val(req.responseText);
+                    $("#txtFile").val(req.responseText);
                 }
                 else {
                     showSnackbar("업로드 실패.");
@@ -1136,11 +1177,6 @@ $(document).ready(function() {
         }
 
         reader.readAsDataURL(files[0]);
-    });
-
-
-    $("#btnRefreshReportCaptcha").on('click', () => {
-        refreshReportCaptcha();
     });
 
 

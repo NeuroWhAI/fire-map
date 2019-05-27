@@ -176,49 +176,52 @@
                 <div class="mdl-snackbar__text"></div>
                 <button class="mdl-snackbar__action" type="button"></button>
             </div>
+
+            <div id="fab_ctn" class="mdl-button--fab_flinger-container">
+                <button id="fab_btn" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                    <i class="material-icons">add</i>
+                </button>
+                <div class="mdl-button--fab_flinger-options">
+                    <button id="btnFabReport" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect">
+                        <i class="material-icons">add_location</i>
+                    </button>
+                    <div class="mdl-tooltip mdl-tooltip--large mdl-tooltip--left" for="btnFabReport">화재/산불 제보</div>
+                    <button id="btnFabShelter" disabled class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect">
+                        <i class="material-icons">home</i>
+                    </button>
+                    <div class="mdl-tooltip mdl-tooltip--large mdl-tooltip--left" for="btnFabShelter">대피소 등록</div>
+                </div>
+            </div>
         </main>
     </div>
-
-    <div class="fab">
-        <i class="material-icons fab-icon">add_location</i>
-        <form class='cntt-wrapper' id="frmReport">
-            <!-- Report form -->
-            <div id="fab-hdr" class="horizontal-container">
-                <i id="icoForm" class="report-form-icon material-icons">update</i>
-                <h3>제보하기</h3>
-            </div>
-            <div class="cntt">
+    
+    <dialog id="dlgReport" class="mdl-dialog report-dlg">
+        <div class="horizontal-container mdl-dialog__title">
+            <i id="icoForm" class="report-form-icon material-icons">update</i>
+            <h3>제보하기</h3>
+        </div>
+        <div class="mdl-dialog__content">
+            <form id="frmReport">
+                <!-- Report form -->
                 <input hidden type="text" name="longitude" id="txtLongitude">
                 <input hidden type="text" name="latitude" id="txtLatitude">
+                <b id="txtLevelName">등급</b>
                 <div class="lvl-slider">
                     <input class="mdl-slider mdl-js-slider" type="range" min="0" max="4" value="1" name="lvl"
                         id="barLevel">
                 </div>
-                <span id="txtLevel">등급 설명</span>
-                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                <span id="txtLevelDesc">등급 설명</span>
+                <div class="full-width mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                     <textarea class="mdl-textfield__input no-resize" rows="3" id="txtDesc"
                         name="description"></textarea>
                     <label class="mdl-textfield__label" for="txtDesc">상황 설명 (선택)</label>
                 </div>
-                <div class="mdl-textfield mdl-js-textfield mdl-textfield--file">
+                <div class="full-width mdl-textfield mdl-js-textfield mdl-textfield--file">
                     <input class="mdl-textfield__input" placeholder="현장 이미지 (선택)" type="text" id="txtFile"
                         name="img_key" readonly>
                     <div class="mdl-button mdl-button--primary mdl-button--icon mdl-button--file">
                         <i class="material-icons">attach_file</i>
                         <input type="file" id="btnUpload" accept=".png, .jpg, .jpeg, .bmp">
-                    </div>
-                </div>
-                <div class="captcha-box">
-                    <div class="horizontal-container">
-                        <img id="imgCaptcha" alt="Captcha" width="148" height="81">
-                        <button type="button" id="btnRefreshReportCaptcha"
-                            class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
-                            <i class="material-icons">refresh</i>
-                        </button>
-                    </div>
-                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                        <input class="mdl-textfield__input" type="text" id="txtCaptcha" name="captcha">
-                        <label class="mdl-textfield__label" for="txtCaptcha">자동입력 방지문자</label>
                     </div>
                 </div>
                 <div class="horizontal-container">
@@ -233,15 +236,39 @@
                         <label class="mdl-textfield__label" for="txtUserPwd">비밀번호</label>
                     </div>
                 </div>
-            </div>
-            <div class="btn-wrapper">
-                <button type="button" class="mdl-button mdl-js-button" id="cancel">Cancel</button>
-                <button type="button" class="mdl-button mdl-js-button mdl-button--primary"
-                    id="btnSubmit">Submit</button>
-            </div>
-        </form>
-    </div>
-    
+            </form>
+        </div>
+        <div class="mdl-dialog__actions">
+            <button type="button" class="mdl-button mdl-js-button close" id="btnCancelReport">취소</button>
+            <button type="button" class="mdl-button mdl-js-button mdl-button--primary"
+                id="btnConfirmReport">확인</button>
+        </div>
+    </dialog>
+    <dialog id="dlgReportCaptcha" class="mdl-dialog">
+        <h3 class="mdl-dialog__title">제보하기</h3>
+        <div class="mdl-dialog__content">
+            <form id="frmReportCaptcha">
+                <div class="captcha-box">
+                    <div class="horizontal-container">
+                        <img id="imgCaptcha" alt="Captcha" width="148" height="81">
+                        <button type="button" id="btnRefreshReportCaptcha"
+                            class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
+                            <i class="material-icons">refresh</i>
+                        </button>
+                    </div>
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        <input class="mdl-textfield__input" type="text" id="txtCaptcha" name="captcha">
+                        <label class="mdl-textfield__label" for="txtCaptcha">자동입력 방지문자</label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="mdl-dialog__actions">
+            <button type="button" class="mdl-button mdl-js-button close" id="btnCancelReportCaptcha">취소</button>
+            <button type="button" class="mdl-button mdl-js-button mdl-button--primary"
+                id="btnSubmitReport">전송</button>
+        </div>
+    </dialog>
     <dialog id="dlgDelete" class="mdl-dialog">
         <h3 class="mdl-dialog__title">제보 삭제하기</h3>
         <div class="mdl-dialog__content">
