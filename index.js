@@ -8,7 +8,7 @@ import OSM from 'ol/source/OSM';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Heatmap as HeatmapLayer } from 'ol/layer';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, transform as transformCoordinate } from 'ol/proj';
 import Geolocation from 'ol/Geolocation';
 import { Style, Circle as CircleStyle, Fill, Stroke, Icon } from 'ol/style';
 import { defaults as defaultInteraction } from 'ol/interaction';
@@ -152,6 +152,19 @@ $(document).ready(function() {
         dlgScoreShelter.close();
     }
 
+    var dlgUserShelter = document.getElementById("dlgUserShelter");
+    if (!dlgUserShelter.showModal) {
+        dialogPolyfill.registerDialog(dlgUserShelter);
+    }
+    function showUserShelterDialog() {
+        refreshUserShelterCaptcha();
+
+        dlgUserShelter.showModal();
+    }
+    function closeUserShelterDialog() {
+        dlgUserShelter.close();
+    }
+
     function getGpsPosition() {
         let geom = positionFeature.getGeometry();
         if (geom) {
@@ -191,6 +204,13 @@ $(document).ready(function() {
     function refreshScoreCaptcha() {
         imgScoreCaptcha.attr('src', `${HOST}/captcha?channel=4&${Date.now()}`);
         txtScoreCaptcha.val("");
+    }
+
+    var imgUserShelterCaptcha = $("#imgUserShelterCaptcha");
+    var txtUserShelterCaptcha = $("#txtUserShelterCaptcha");
+    function refreshUserShelterCaptcha() {
+        imgUserShelterCaptcha.attr('src', `${HOST}/captcha?channel=3&${Date.now()}`);
+        txtUserShelterCaptcha.val("");
     }
 
     function refreshReportMap() {
@@ -1056,8 +1076,10 @@ $(document).ready(function() {
         showReportDialog();
     });
 
+    var shelterLocationMode = false;
     $("#btnFabShelter").click(function() {
-       // TODO: 대피소 등록 화면 띄우기.
+        shelterLocationMode = true;
+        showSnackbar("등록하실 위치를 찾아 클릭하세요.");
     });
 
 
@@ -1548,7 +1570,19 @@ $(document).ready(function() {
             }
         });
         
-        if (gpsEndPosing) {
+        if (shelterLocationMode) {
+            shelterLocationMode = false;
+
+            if (confirm("해당 위치에 등록할까요?")) {
+                // Set location fields.
+                let lonLat = transformCoordinate(coords, 'EPSG:3857', 'EPSG:4326');
+                $("#txtShelterLon").val(lonLat[0]);
+                $("#txtShelterLat").val(lonLat[1]);
+
+                showUserShelterDialog();
+            }
+        }
+        else if (gpsEndPosing) {
             closeAllPopups();
             finishGpsPosing(coords);
         }
@@ -1693,6 +1727,48 @@ $(document).ready(function() {
             error: function(xhr, options, err) {
                 closeLoadingDialog();
                 refreshScoreCaptcha();
+
+                if (xhr.responseText) {
+                    showSnackbar("오류: " + xhr.responseText);
+                }
+                else {
+                    showSnackbar("오류: " + err);
+                }
+            },
+        });
+    });
+
+    // Dialog to post user shelter.
+    $("#btnRefreshUserShelterCaptcha").on('click', () => {
+        refreshUserShelterCaptcha();
+    });
+    $("#btnCloseUserShelterDlg").on('click', closeUserShelterDialog);
+    $("#btnSubmitUserShelterDlg").on('click', () => {
+        showLoadingDialog();
+
+        $.ajax({
+            type: 'POST',
+            url: HOST + "/user-shelter",
+            data: $("#frmUserShelter").serialize(),
+            success: function(data, status, req) {
+                closeLoadingDialog();
+
+                if (status == 'success') {
+                    $("#txtUserShelterName").val('');
+                    $("#txtUserShelterInfo").val('');
+                    $("#txtUserShelterEvidence").val('');
+
+                    closeUserShelterDialog(event);
+                    showSnackbar("전송되었습니다.");
+                }
+                else {
+                    refreshUserShelterCaptcha();
+                    showSnackbar(data);
+                }
+            },
+            error: function(xhr, options, err) {
+                closeLoadingDialog();
+                refreshUserShelterCaptcha();
 
                 if (xhr.responseText) {
                     showSnackbar("오류: " + xhr.responseText);

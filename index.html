@@ -186,7 +186,7 @@
                         <i class="material-icons">whatshot</i>
                     </button>
                     <div class="mdl-tooltip mdl-tooltip--large mdl-tooltip--left" for="btnFabReport">화재/산불 제보</div>
-                    <button id="btnFabShelter" disabled class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect">
+                    <button id="btnFabShelter" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect">
                         <i class="material-icons">home</i>
                     </button>
                     <div class="mdl-tooltip mdl-tooltip--large mdl-tooltip--left" for="btnFabShelter">대피소 등록</div>
@@ -301,16 +301,18 @@
                         name="reason"></textarea>
                     <label class="mdl-textfield__label" for="txtBadReason">이유 (선택)</label>
                 </div>
-                <div class="horizontal-container">
-                    <img id="imgBadCaptcha" alt="Captcha" width="148" height="81">
-                    <button type="button" id="btnRefreshBadCaptcha"
-                        class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
-                        <i class="material-icons">refresh</i>
-                    </button>
-                </div>
-                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                    <input class="mdl-textfield__input" id="txtBadCaptcha" name="captcha">
-                    <label class="mdl-textfield__label" for="txtBadCaptcha">자동입력 방지문자</label>
+                <div class="captcha-box">
+                    <div class="horizontal-container">
+                        <img id="imgBadCaptcha" alt="Captcha" width="148" height="81">
+                        <button type="button" id="btnRefreshBadCaptcha"
+                            class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
+                            <i class="material-icons">refresh</i>
+                        </button>
+                    </div>
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        <input class="mdl-textfield__input" id="txtBadCaptcha" name="captcha">
+                        <label class="mdl-textfield__label" for="txtBadCaptcha">자동입력 방지문자</label>
+                    </div>
                 </div>
             </form>
         </div>
@@ -325,16 +327,18 @@
             <form id="frmScoreShelter">
                 <input hidden type="text" id="txtScoreShelterId" name="id">
                 <input hidden type="text" id="txtScoreShelter" name="score">
-                <div class="horizontal-container">
-                    <img id="imgScoreCaptcha" alt="Captcha" width="148" height="81">
-                    <button type="button" id="btnRefreshScoreCaptcha"
-                        class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
-                        <i class="material-icons">refresh</i>
-                    </button>
-                </div>
-                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                    <input class="mdl-textfield__input" id="txtScoreCaptcha" name="captcha">
-                    <label class="mdl-textfield__label" for="txtScoreCaptcha">자동입력 방지문자</label>
+                <div class="captcha-box">
+                    <div class="horizontal-container">
+                        <img id="imgScoreCaptcha" alt="Captcha" width="148" height="81">
+                        <button type="button" id="btnRefreshScoreCaptcha"
+                            class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
+                            <i class="material-icons">refresh</i>
+                        </button>
+                    </div>
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        <input class="mdl-textfield__input" id="txtScoreCaptcha" name="captcha">
+                        <label class="mdl-textfield__label" for="txtScoreCaptcha">자동입력 방지문자</label>
+                    </div>
                 </div>
             </form>
         </div>
@@ -343,6 +347,45 @@
             <button id="btnSubmitScoreDlg" type="button" class="mdl-button">확인</button>
         </div>
     </dialog>
+    <dialog id="dlgUserShelter" class="mdl-dialog">
+        <h3 class="mdl-dialog__title">대피소 등록</h3>
+        <div class="mdl-dialog__content">
+            <form id="frmUserShelter">
+                <input hidden type="text" id="txtShelterLat" name="latitude">
+                <input hidden type="text" id="txtShelterLon" name="longitude">
+                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" id="txtUserShelterName" name="name">
+                    <label class="mdl-textfield__label" for="txtUserShelterName">대피소 이름</label>
+                </div>
+                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" id="txtUserShelterInfo" name="info">
+                    <label class="mdl-textfield__label" for="txtUserShelterInfo">정보 (면적, 수용력 등)</label>
+                </div>
+                <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" id="txtUserShelterEvidence" name="evidence">
+                    <label class="mdl-textfield__label" for="txtUserShelterEvidence">근거 출처 (기사, 재난문자 등)</label>
+                </div>
+                <div class="captcha-box">
+                    <div class="horizontal-container">
+                        <img id="imgUserShelterCaptcha" alt="Captcha" width="148" height="81">
+                        <button type="button" id="btnRefreshUserShelterCaptcha"
+                            class="refresh-captcha-button mdl-button mdl-js-button mdl-button--icon">
+                            <i class="material-icons">refresh</i>
+                        </button>
+                    </div>
+                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                        <input class="mdl-textfield__input" id="txtUserShelterCaptcha" name="captcha">
+                        <label class="mdl-textfield__label" for="txtUserShelterCaptcha">자동입력 방지문자</label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="mdl-dialog__actions">
+            <button id="btnCloseUserShelterDlg" type="button" class="mdl-button">취소</button>
+            <button id="btnSubmitUserShelterDlg" type="button" class="mdl-button">확인</button>
+        </div>
+    </dialog>
+
     <dialog id="dlgLoading" class="mdl-dialog">
         <div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
     </dialog>
