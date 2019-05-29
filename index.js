@@ -893,7 +893,7 @@ $(document).ready(function() {
         wind.zoom(scale);
         wind.reset();
 
-        if (showWind && !hideWindTemp) {
+        if (showWind) {
             windCanvas.hidden = false;
         }
     }
@@ -1271,43 +1271,31 @@ $(document).ready(function() {
     function closePopupReport() {
         reportOverlay.setPosition(undefined);
         popupReportCloser.blur();
-
-        restoreWindVisibility();
     }
 
     function closePopupSelect() {
         selectOverlay.setPosition(undefined);
         popupSelectCloser.blur();
-        
-        restoreWindVisibility();
     }
 
     function closePopupShelter() {
         shelterOverlay.setPosition(undefined);
         popupShelterCloser.blur();
-        
-        restoreWindVisibility();
     }
 
     function closePopupCctv() {
         cctvOverlay.setPosition(undefined);
         popupCctvCloser.blur();
-        
-        restoreWindVisibility();
     }
 
     function closePopupEvent() {
         eventOverlay.setPosition(undefined);
         popupEventCloser.blur();
-        
-        restoreWindVisibility();
     }
 
     function closePopupFire() {
         fireOverlay.setPosition(undefined);
         popupFireCloser.blur();
-        
-        restoreWindVisibility();
     }
 
     popupReportCloser.onclick = function () {
@@ -1344,7 +1332,6 @@ $(document).ready(function() {
 
     function showReportPopup(id, coords) {
         closeAllPopups();
-        hideWindTemporarily();
         
         $("#txtReportIdDelete").val(id);
         $("#txtBadReportId").val(id);
@@ -1395,7 +1382,6 @@ $(document).ready(function() {
 
     function showSelectPopup(reports, coords) {
         closeAllPopups();
-        hideWindTemporarily();
 
         const itemMapper = (r) => {
             let time = formatTime(new Date(r.created_time * 1000));
@@ -1428,7 +1414,6 @@ $(document).ready(function() {
 
     function showShelterPopup(id, coords) {
         closeAllPopups();
-        hideWindTemporarily();
         
         $("#txtScoreShelterId").val(id);
 
@@ -1464,7 +1449,6 @@ $(document).ready(function() {
 
     function showCctvPopup(cctv, coords) {
         closeAllPopups();
-        hideWindTemporarily();
 
         showLoadingDialog();
 
@@ -1506,7 +1490,6 @@ $(document).ready(function() {
 
     function showEventPopup(event, coords) {
         closeAllPopups();
-        hideWindTemporarily();
 
         let rawDate = event.date;
         let date = `${rawDate.substr(0, 4)}-${rawDate.substr(4, 2)}-${rawDate.substr(6, 2)}`;
@@ -1524,7 +1507,6 @@ $(document).ready(function() {
 
     function showFirePopup(fire, coords) {
         closeAllPopups();
-        hideWindTemporarily();
 
         $("#txtFireTime").text(formatTime(new Date(fire.time * 1000)));
         $("#txtFireBright").text(`밝기 : ${fire.bright.toFixed(1)} K`);
@@ -1807,17 +1789,6 @@ $(document).ready(function() {
         showForecast = !showForecast;
         updateVisibilityByZoom();
     });
-
-    var hideWindTemp = false;
-    function hideWindTemporarily() {
-        windCanvas.hidden = true;
-        hideWindTemp = true;
-    }
-
-    function restoreWindVisibility() {
-        windCanvas.hidden = !showWind;
-        hideWindTemp = false;
-    }
 
     
     // Adjust map again.
