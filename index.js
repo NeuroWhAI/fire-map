@@ -1446,6 +1446,7 @@ $(document).ready(function() {
             }
 
             $("#txtShelterName").text(shelter.name);
+            $("#linkShelterMap").attr('href', `https://www.google.com/maps/place/${shelter.latitude},${shelter.longitude}`);
             $("#txtShelterInfo").text(shelter.info || "정보 없음");
             $("#bdgGoodShelter").attr('data-badge', (shelter.good > 99) ? "99+" : shelter.good);
             $("#bdgBadShelter").attr('data-badge', (shelter.bad > 99) ? "99+" : shelter.bad);
