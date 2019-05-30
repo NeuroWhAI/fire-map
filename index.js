@@ -969,13 +969,19 @@ $(document).ready(function() {
                 }
 
                 let windData = data;
-                const windImage = new Image();
-                windData.image = windImage;
-                windImage.src = HOST + "/wind-map?id=" + data.id;
-                windImage.onload = function () {
-                    wind.setWind(windData);
-                    updateWindScale();
-                };
+
+                if (windData.error) {
+                    showSnackbar("바람 데이터를 가져올 수 없습니다.");
+                }
+                else {
+                    const windImage = new Image();
+                    windData.image = windImage;
+                    windImage.src = HOST + "/wind-map?id=" + data.id;
+                    windImage.onload = function () {
+                        wind.setWind(windData);
+                        updateWindScale();
+                    };
+                }
 
                 resolve();
             }
