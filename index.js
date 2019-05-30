@@ -1458,6 +1458,9 @@ $(document).ready(function() {
 
         showLoadingDialog();
 
+        var linkCctvError = $("#linkCctvError");
+        linkCctvError.hide();
+
         var req = new XMLHttpRequest();
         req.onload = function() {
             let tv = tryParseJson(req.response);
@@ -1475,6 +1478,15 @@ $(document).ready(function() {
             if (match !== null) {
                 title = tv.name.slice(match[0].length);
                 info = match[1];
+            }
+            
+            let proxyIndex = tv.url.indexOf('proxy/');
+            if (proxyIndex >= 0) {
+                let srcRoute = tv.url.substr(proxyIndex + 6);
+                linkCctvError.attr('href', "http://cctvsec.ktict.co.kr/" + srcRoute);
+            }
+            else {
+                linkCctvError.attr('href', "https://neurowhai.tistory.com/346");
             }
 
             $("#txtCctvName").text(title);
@@ -1601,6 +1613,11 @@ $(document).ready(function() {
             closeAllPopups();
             cancelGpsPosing();
         }
+    });
+
+    // Show helpful message when loading CCTV was failed.
+    $("#movCctv").on('error', (e) => {
+        $("#linkCctvError").show();
     });
 
 
