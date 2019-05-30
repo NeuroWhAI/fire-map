@@ -1617,7 +1617,13 @@ $(document).ready(function() {
 
     // Show helpful message when loading CCTV was failed.
     $("#movCctv").on('error', (e) => {
-        $("#linkCctvError").show();
+        let linkCctvError = $("#linkCctvError");
+        linkCctvError.text("동영상이 재생되지 않나요?");
+        linkCctvError.show();
+    });
+    $("#linkCctvError").on('click', (e) => {
+        let linkCctvError = $("#linkCctvError");
+        linkCctvError.text("여전히 안되면 나중에 새로고침 후 시도해보세요.");
     });
 
 
