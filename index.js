@@ -25,6 +25,7 @@ if (!Promise.prototype.finally) {
 
 $(document).ready(function() {
     const HOST = "";
+    var shelterScoreScale = 1;
 
 
     function tryParseJson(text) {
@@ -287,6 +288,8 @@ $(document).ready(function() {
                     reject();
                     return;
                 }
+
+                shelterScoreScale = (data.eval_scale || 1);
 
                 shelterSource.clear();
 
@@ -1436,11 +1439,14 @@ $(document).ready(function() {
                 return;
             }
 
+            let good = Math.ceil(shelter.good / shelterScoreScale);
+            let bad = Math.ceil(shelter.bad / shelterScoreScale);
+
             $("#txtShelterName").text(shelter.name);
             $("#linkShelterMap").attr('href', `https://www.google.com/maps/place/${shelter.latitude},${shelter.longitude}`);
             $("#txtShelterInfo").text(shelter.info || "정보 없음");
-            $("#bdgGoodShelter").attr('data-badge', (shelter.good > 99) ? "99+" : shelter.good);
-            $("#bdgBadShelter").attr('data-badge', (shelter.bad > 99) ? "99+" : shelter.bad);
+            $("#bdgGoodShelter").attr('data-badge', (good > 99) ? "99+" : good);
+            $("#bdgBadShelter").attr('data-badge', (bad > 99) ? "99+" : bad);
 
             shelterOverlay.setPosition(coords);
         }
