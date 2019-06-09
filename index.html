@@ -358,11 +358,13 @@
                 <input hidden type="text" id="txtShelterLat" name="latitude">
                 <input hidden type="text" id="txtShelterLon" name="longitude">
                 <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                    <input class="mdl-textfield__input" id="txtUserShelterName" name="name">
+                    <input class="mdl-textfield__input" id="txtUserShelterName" name="name"
+                        minlength="2" maxlength="10">
                     <label class="mdl-textfield__label" for="txtUserShelterName">대피소 이름</label>
                 </div>
                 <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                    <input class="mdl-textfield__input" id="txtUserShelterInfo" name="info">
+                    <input class="mdl-textfield__input" id="txtUserShelterInfo" name="info"
+                        maxlength="20">
                     <label class="mdl-textfield__label" for="txtUserShelterInfo">정보 (면적, 수용력 등)</label>
                 </div>
                 <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">

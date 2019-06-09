@@ -1762,6 +1762,33 @@ $(document).ready(function() {
     });
     $("#btnCloseUserShelterDlg").on('click', closeUserShelterDialog);
     $("#btnSubmitUserShelterDlg").on('click', () => {
+        let txtCaptcha = $("#txtUserShelterCaptcha");
+        let txtName = $("#txtUserShelterName");
+        let txtInfo = $("#txtUserShelterInfo");
+        let txtEvidence = $("#txtUserShelterEvidence");
+
+        let captchaText = txtCaptcha.val();
+        let name = txtName.val();
+        let info = txtInfo.val();
+
+        // 데이터 검증
+        if (captchaText.length == 0) {
+            showSnackbar("자동입력 방지문자를 입력하세요.");
+            return;
+        }
+        else if (name.length < txtName.attr('minlength')) {
+            showSnackbar("이름이 너무 짧습니다.");
+            return;
+        }
+        else if (name.length > txtName.attr('maxlength')) {
+            showSnackbar("이름이 너무 깁니다.");
+            return;
+        }
+        else if (info.length > txtInfo.attr('maxlength')) {
+            showSnackbar("정보가 너무 깁니다.");
+            return;
+        }
+
         showLoadingDialog();
 
         $.ajax({
@@ -1772,9 +1799,9 @@ $(document).ready(function() {
                 closeLoadingDialog();
 
                 if (status == 'success') {
-                    $("#txtUserShelterName").val('');
-                    $("#txtUserShelterInfo").val('');
-                    $("#txtUserShelterEvidence").val('');
+                    txtName.val('');
+                    txtInfo.val('');
+                    txtEvidence.val('');
 
                     closeUserShelterDialog(event);
                     showSnackbar("전송되었습니다.");
