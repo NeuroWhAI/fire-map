@@ -137,7 +137,9 @@ uniform vec2 u_distortion;
 varying vec2 v_particle_pos;
 
 void main() {
-    vec2 velocity = mix(u_wind_min, u_wind_max, texture2D(u_wind, v_particle_pos / u_distortion + u_offset).rg);
+    vec4 wind = texture2D(u_wind, v_particle_pos / u_distortion + u_offset);
+
+    vec2 velocity = mix(u_wind_min, u_wind_max, wind.rg);
     float speed_t = min(length(velocity) / u_max_wind, 1.0);
 
     // color ramp is encoded in a 16x16 texture
@@ -145,7 +147,7 @@ void main() {
         fract(16.0 * speed_t),
         floor(16.0 * speed_t) / 16.0);
 
-    gl_FragColor = texture2D(u_color_ramp, ramp_pos);
+    gl_FragColor = texture2D(u_color_ramp, ramp_pos) * wind.a;
 }
 `;
 
