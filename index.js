@@ -499,33 +499,38 @@ $(document).ready(function() {
                     return;
                 }
 
-                let forecasts = data.forecasts;
+                if (data.error) {
+                    showSnackbar("화재위험지수 데이터를 가져올 수 없습니다.");
+                }
+                else {
+                    let forecasts = data.forecasts;
 
-                let lvlToColor = ['#005ce6', '#ffdf00', '#ff7200', '#ff0000'];
+                    let lvlToColor = ['#005ce6', '#ffdf00', '#ff7200', '#ff0000'];
 
-                for (let i = 0; i < forecasts.length; ++i) {
-                    let fire = forecasts[i];
+                    for (let i = 0; i < forecasts.length; ++i) {
+                        let fire = forecasts[i];
 
-                    let level = fire.lvl;
-                    if (level < 51) {
-                        level = 0;
-                    }
-                    else if (level < 66) {
-                        level = 1;
-                    }
-                    else if (level < 86) {
-                        level = 2;
-                    }
-                    else {
-                        level = 3;
-                    }
+                        let level = fire.lvl;
+                        if (level < 51) {
+                            level = 0;
+                        }
+                        else if (level < 66) {
+                            level = 1;
+                        }
+                        else if (level < 86) {
+                            level = 2;
+                        }
+                        else {
+                            level = 3;
+                        }
 
-                    let feat = forecastSource.getFeatureById(fire.code);
-                    feat.setStyle(new Style({
-                        fill: new Fill({
-                            color: lvlToColor[level],
-                        }),
-                    }));
+                        let feat = forecastSource.getFeatureById(fire.code);
+                        feat.setStyle(new Style({
+                            fill: new Fill({
+                                color: lvlToColor[level],
+                            }),
+                        }));
+                    }
                 }
 
                 resolve();
