@@ -1029,6 +1029,8 @@ $(document).ready(function() {
 
         showLoadingDialog();
         refreshReportMap()
+            .then(() => refreshShelterMap())
+            .then(() => refreshCctvMap())
             .then(() => refreshEventMap())
             .then(() => refreshWind())
             .then(() => refreshFireMap())
