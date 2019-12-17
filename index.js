@@ -49,6 +49,47 @@ $(document).ready(function() {
         return `${month}. ${day}. ${hours}:${mins}`;
     }
 
+    function resizeImage(blob, maxWidth, maxHeight) {
+        return new Promise(function(resolve, reject) {
+            window.URL = window.URL || window.webkitURL;
+            var blobURL = window.URL.createObjectURL(blob);
+            
+            var image = new Image();
+            image.src = blobURL;
+            image.onload = function() {
+                let width = image.width;
+                let height = image.height;
+
+                let scale = 1.0;
+                if (width > height) {
+                    if (width > maxWidth) {
+                        scale = maxWidth / width;
+                    }
+                }
+                else {
+                    if (height > maxHeight) {
+                        scale = maxHeight / height;
+                    }
+                }
+
+                width = Math.round(image.width * scale);
+                height = Math.round(image.height * scale);
+
+                let tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+
+                let ctx = tempCanvas.getContext("2d");
+                ctx.drawImage(image, 0, 0, width, height);
+                
+                resolve(tempCanvas.toDataURL("image/jpeg", 0.8));
+            }
+            image.onerror = function() {
+                reject("이미지 로딩 실패.");
+            }
+        });
+    }
+
     var domText = document.createTextNode('');
     var domNative = document.createElement('span');
     domNative.appendChild(domText);
@@ -1191,30 +1232,39 @@ $(document).ready(function() {
 
         var reader = new FileReader();
         reader.onload = function() {
-            var req = new XMLHttpRequest();
-            req.onload = function() {
-                closeLoadingDialog();
-                if (req.status == 200) {
-                    $("#txtFile").val(req.responseText);
-                }
-                else {
-                    showSnackbar("업로드 실패.");
-                }
-            }
-            req.onerror = function() {
-                closeLoadingDialog();
-                showSnackbar("업로드 실패.");
-            }
+            let imgReport = $("#imgReport");
+            let maxScale = 2;
+            resizeImage(new Blob([reader.result]), imgReport.width() * maxScale, imgReport.height() * maxScale)
+                .then((imgUrl) => {
+                    var req = new XMLHttpRequest();
+                    req.onload = function() {
+                        closeLoadingDialog();
+                        if (req.status == 200) {
+                            $("#txtFile").val(req.responseText);
+                        }
+                        else {
+                            showSnackbar("업로드 실패.");
+                        }
+                    }
+                    req.onerror = function() {
+                        closeLoadingDialog();
+                        showSnackbar("업로드 실패.");
+                    }
 
-            req.open("POST", HOST + "/upload-image", true);
-            req.send(reader.result);
+                    req.open("POST", HOST + "/upload-image", true);
+                    req.send(imgUrl);
+                })
+                .catch((reason) => {
+                    closeLoadingDialog();
+                    showSnackbar("이미지 압축 실패.");
+                });
         }
         reader.onerror = function() {
             closeLoadingDialog();
             showSnackbar("파일을 읽을 수 없습니다.");
         }
 
-        reader.readAsDataURL(files[0]);
+        reader.readAsArrayBuffer(files[0]);
     });
 
 
