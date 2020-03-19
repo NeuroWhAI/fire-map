@@ -230,6 +230,7 @@ $(document).ready(function() {
 
     var imgCaptcha = $("#imgCaptcha");
     function refreshReportCaptcha() {
+        imgCaptcha.attr('src', `${HOST}/captcha.png`);
         imgCaptcha.attr('src', `${HOST}/captcha?channel=1&${Date.now()}`);
         $("#txtCaptcha").val("");
     }
@@ -237,6 +238,7 @@ $(document).ready(function() {
     var imgBadCaptcha = $("#imgBadCaptcha");
     var txtBadCaptcha = $("#txtBadCaptcha");
     function refreshBadCaptcha() {
+        imgBadCaptcha.attr('src', `${HOST}/captcha.png`);
         imgBadCaptcha.attr('src', `${HOST}/captcha?channel=2&${Date.now()}`);
         txtBadCaptcha.val("");
     }
@@ -244,6 +246,7 @@ $(document).ready(function() {
     var imgScoreCaptcha = $("#imgScoreCaptcha");
     var txtScoreCaptcha = $("#txtScoreCaptcha");
     function refreshScoreCaptcha() {
+        imgScoreCaptcha.attr('src', `${HOST}/captcha.png`);
         imgScoreCaptcha.attr('src', `${HOST}/captcha?channel=4&${Date.now()}`);
         txtScoreCaptcha.val("");
     }
@@ -251,6 +254,7 @@ $(document).ready(function() {
     var imgUserShelterCaptcha = $("#imgUserShelterCaptcha");
     var txtUserShelterCaptcha = $("#txtUserShelterCaptcha");
     function refreshUserShelterCaptcha() {
+        imgUserShelterCaptcha.attr('src', `${HOST}/captcha.png`);
         imgUserShelterCaptcha.attr('src', `${HOST}/captcha?channel=3&${Date.now()}`);
         txtUserShelterCaptcha.val("");
     }
