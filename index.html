@@ -59,6 +59,7 @@
                     <li id="menuToggleCctv" class="mdl-menu__item">CCTV 표시/숨기기</li>
                     <li id="menuToggleWind" class="mdl-menu__item">바람 표시/숨기기</li>
                     <li id="menuToggleForecast" class="mdl-menu__item">위험지수 표시/숨기기</li>
+                    <li id="menuToggleDanger" class="mdl-menu__item">위험시설 표시/숨기기</li>
                 </ul>
             </div>
         </header>
@@ -174,6 +175,21 @@
                 <span id="txtFireBright">Bright</span>
                 <br/>
                 <span id="txtFirePower">Power</span>
+            </div>
+            <div id="popupDanger" class="ol-popup">
+                <a href="#" id="popupDangerCloser" class="ol-popup-closer"></a>
+                <ul class="popup-title-box mdl-list">
+                    <li class="mdl-list__item mdl-list__item--two-line">
+                        <span class="mdl-list__item-primary-content">
+                            <i class="material-icons mdl-list__item-avatar">fmd_bad</i>
+                            <span id="txtDangerName">Name</span>
+                            <a id="linkDangerMap" target="_blank">
+                                <i class="launch-map material-icons">launch</i>
+                            </a>
+                            <span id="txtDangerInfo" class="mdl-list__item-sub-title">Information</span>
+                        </span>
+                    </li>
+                </ul>
             </div>
 
             <div id="snackbar" class="mdl-js-snackbar mdl-snackbar">

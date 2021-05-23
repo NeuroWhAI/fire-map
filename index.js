@@ -590,6 +590,53 @@ $(document).ready(function() {
         });
     }
 
+    function refreshDangerMap() {
+        return new Promise(function(resolve, reject) {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                let data = tryParseJson(req.response);
+
+                if (!data || !data.places) {
+                    showSnackbar("위험시설 데이터를 가져올 수 없습니다.");
+                    reject();
+                    return;
+                }
+
+                dangerSource.clear();
+
+                let places = data.places;
+                let icons = ['traditional-temple.png', 'normal-temple.png'];
+
+                for (let i = 0; i < places.length; ++i) {
+                    let place = places[i];
+
+                    let placeFeature = new Feature();
+                    placeFeature.set('place', place);
+                    placeFeature.setGeometry(new Point(fromLonLat([place.lon, place.lat])));
+                    placeFeature.setStyle(new Style({
+                        image: new Icon({
+                            anchor: [0.5, 0.5],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'fraction',
+                            src: icons[place.t],
+                        }),
+                    }));
+
+                    dangerSource.addFeature(placeFeature);
+                }
+
+                resolve();
+            }
+            req.onerror = function() {
+                reject();
+                showSnackbar("위험시설 데이터를 가져올 수 없습니다.");
+            }
+
+            req.open("GET", HOST + "/danger-place-map", true);
+            req.send();
+        });
+    }
+    
     function levelToIcon(lvl) {
         const icons = ['mood', 'sentiment_dissatisfied', 'warning', 'whatshot', 'directions_run'];
 
@@ -854,7 +901,7 @@ $(document).ready(function() {
     var shelterSource = new VectorSource();
     var shelterLayer = new VectorLayer({
         source: shelterSource,
-        zIndex: 4,
+        zIndex: 5,
     });
     map.addLayer(shelterLayer);
 
@@ -862,7 +909,7 @@ $(document).ready(function() {
     var cctvSource = new VectorSource();
     var cctvLayer = new VectorLayer({
         source: cctvSource,
-        zIndex: 3,
+        zIndex: 4,
     });
     map.addLayer(cctvLayer);
 
@@ -870,7 +917,7 @@ $(document).ready(function() {
     var eventSource = new VectorSource();
     var eventLayer = new VectorLayer({
         source: eventSource,
-        zIndex: 5,
+        zIndex: 6,
     });
     map.addLayer(eventLayer);
 
@@ -888,10 +935,19 @@ $(document).ready(function() {
     map.addLayer(fireLayer);
 
 
+    var dangerSource = new VectorSource();
+    var dangerLayer = new VectorLayer({
+        source: dangerSource,
+        zIndex: 3,
+    });
+    map.addLayer(dangerLayer);
+
+
     var showShelter = true;
     var showCctv = true;
     var showWind = true;
     var showForecast = true;
+    var showDangerPlace = false;
 
     function updateVisibilityByZoom() {
         let needUpdate = false;
@@ -912,6 +968,12 @@ $(document).ready(function() {
         visible = (showForecast && zoom < 11);
         if (forecastLayer.getVisible() != visible) {
             forecastLayer.setVisible(visible);
+            needUpdate = true;
+        }
+
+        visible = (showDangerPlace && zoom > 7);
+        if (dangerLayer.getVisible() != visible) {
+            dangerLayer.setVisible(visible);
             needUpdate = true;
         }
 
@@ -1057,6 +1119,7 @@ $(document).ready(function() {
         .then(() => refreshEventMap())
         .then(() => refreshWind())
         .then(() => refreshFireMap())
+        .then(() => refreshDangerMap())
         .finally(closeLoadingDialog);
 
 
@@ -1284,6 +1347,8 @@ $(document).ready(function() {
     var popupEventCloser = document.getElementById("popupEventCloser");
     var popupFire = document.getElementById("popupFire");
     var popupFireCloser = document.getElementById("popupFireCloser");
+    var popupDanger = document.getElementById("popupDanger");
+    var popupDangerCloser = document.getElementById("popupDangerCloser");
     var reportList = $("#reportList");
 
     var reportOverlay = new Overlay({
@@ -1328,6 +1393,13 @@ $(document).ready(function() {
             duration: 250
         }
     });
+    var dangerOverlay = new Overlay({
+        element: popupDanger,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250
+        }
+    });
 
     function closeAllPopups() {
         closePopupReport();
@@ -1336,6 +1408,7 @@ $(document).ready(function() {
         closePopupCctv();
         closePopupEvent();
         closePopupFire();
+        closePopupDanger();
     }
 
     function closePopupReport() {
@@ -1368,6 +1441,11 @@ $(document).ready(function() {
         popupFireCloser.blur();
     }
 
+    function closePopupDanger() {
+        dangerOverlay.setPosition(undefined);
+        popupDangerCloser.blur();
+    }
+
     popupReportCloser.onclick = function () {
         closePopupReport();
         return false;
@@ -1392,6 +1470,10 @@ $(document).ready(function() {
         closePopupFire();
         return false;
     };
+    popupDangerCloser.onclick = function () {
+        closePopupDanger();
+        return false;
+    };
 
     map.addOverlay(reportOverlay);
     map.addOverlay(selectOverlay);
@@ -1399,6 +1481,7 @@ $(document).ready(function() {
     map.addOverlay(cctvOverlay);
     map.addOverlay(eventOverlay);
     map.addOverlay(fireOverlay);
+    map.addOverlay(dangerOverlay);
 
     function showReportPopup(id, coords) {
         closeAllPopups();
@@ -1600,6 +1683,16 @@ $(document).ready(function() {
         fireOverlay.setPosition(coords);
     }
 
+    function showDangerPopup(place, coords) {
+        closeAllPopups();
+        
+        $("#txtDangerName").text(place.name);
+        $("#linkDangerMap").attr('href', `https://www.google.com/maps/place/${place.lat},${place.lon}`);
+        $("#txtDangerInfo").text(shelter.addr || "정보 없음");
+
+        dangerOverlay.setPosition(coords);
+    }
+
     map.on('singleclick', function (evt) {
         let coords = evt.coordinate;
 
@@ -1610,6 +1703,7 @@ $(document).ready(function() {
         let cctv = null;
         let fireEvt = null;
         let activeFire = null;
+        let dangerPlace = null;
 
         map.forEachFeatureAtPixel(evt.pixel, function (feat, layer) {
             if (feat === posGpsFeature) {
@@ -1635,6 +1729,9 @@ $(document).ready(function() {
                     || activeFire.get('weight') < feat.get('weight')) {
                     activeFire = feat;
                 }
+            }
+            else if (layer === dangerLayer) {
+                dangerPlace = feat;
             }
         });
         
@@ -1675,6 +1772,9 @@ $(document).ready(function() {
         }
         else if (activeFire !== null) {
             showFirePopup(activeFire.get('fire'), activeFire.getGeometry().getCoordinates());
+        }
+        else if (dangerPlace !== null) {
+            showDangerPopup(dangerPlace.get('place'), dangerPlace.getGeometry().getCoordinates());
         }
         else {
             closeAllPopups();
@@ -1912,6 +2012,14 @@ $(document).ready(function() {
         showForecast = !showForecast;
         updateVisibilityByZoom();
     });
+    $("#menuToggleDanger").on('click', () => {
+        showDangerPlace = !showDangerPlace;
+        updateVisibilityByZoom();
+
+        if (!showDangerPlace) {
+            closePopupDanger();
+        }
+    })
 
     
     // Adjust map again.
