@@ -971,7 +971,7 @@ $(document).ready(function() {
             needUpdate = true;
         }
 
-        visible = (showDangerPlace && zoom > 7);
+        visible = (showDangerPlace && zoom > 11);
         if (dangerLayer.getVisible() != visible) {
             dangerLayer.setVisible(visible);
             needUpdate = true;
@@ -1688,7 +1688,7 @@ $(document).ready(function() {
         
         $("#txtDangerName").text(place.name);
         $("#linkDangerMap").attr('href', `https://www.google.com/maps/place/${place.lat},${place.lon}`);
-        $("#txtDangerInfo").text(shelter.addr || "정보 없음");
+        $("#txtDangerInfo").text(place.addr || "정보 없음");
 
         dangerOverlay.setPosition(coords);
     }
