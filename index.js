@@ -597,7 +597,7 @@ $(document).ready(function() {
                 let data = tryParseJson(req.response);
 
                 if (!data || !data.places) {
-                    showSnackbar("위험시설 데이터를 가져올 수 없습니다.");
+                    showSnackbar("취약시설 데이터를 가져올 수 없습니다.");
                     reject();
                     return;
                 }
@@ -633,7 +633,7 @@ $(document).ready(function() {
             }
             req.onerror = function() {
                 reject();
-                showSnackbar("위험시설 데이터를 가져올 수 없습니다.");
+                showSnackbar("취약시설 데이터를 가져올 수 없습니다.");
             }
 
             req.open("GET", HOST + "/danger-place-map", true);
