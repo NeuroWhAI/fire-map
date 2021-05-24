@@ -610,6 +610,10 @@ $(document).ready(function() {
                 for (let i = 0; i < places.length; ++i) {
                     let place = places[i];
 
+                    if (place.t < 0 || place.t >= icons.length) {
+                        continue;
+                    }
+
                     let placeFeature = new Feature();
                     placeFeature.set('place', place);
                     placeFeature.setGeometry(new Point(fromLonLat([place.lon, place.lat])));
