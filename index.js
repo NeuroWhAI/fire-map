@@ -605,7 +605,7 @@ $(document).ready(function() {
                 dangerSource.clear();
 
                 let places = data.places;
-                let icons = ['traditional-temple.png', 'normal-temple.png'];
+                let icons = ['temple.png', 'hospital.png', 'old-young.png'];
 
                 for (let i = 0; i < places.length; ++i) {
                     let place = places[i];
