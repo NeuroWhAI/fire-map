@@ -225,7 +225,7 @@ var WindGL = function WindGL(gl) {
     this.dropRate = 0.003; // how often the particles move to a random place
     this.dropRateBump = 0.01; // drop rate increase relative to individual particle speed
     this.pointSize = 1.5;
-    this.maxWind = 24.0;
+    this.maxWind = 20.0;
     this.opacity = 0.6;
 
     this.drawProgram = createProgram(gl, drawVert, drawFrag);
