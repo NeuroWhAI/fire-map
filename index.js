@@ -1,5 +1,6 @@
 window.$ = window.jQuery = require('jquery');
-import dialogPolyfill from 'dialog-polyfill'
+import dialogPolyfill from 'dialog-polyfill';
+import Hls from 'hls.js';
 import 'ol/ol.css';
 import { Map, View, Feature } from 'ol';
 import Overlay from 'ol/Overlay';
@@ -26,6 +27,7 @@ if (!Promise.prototype.finally) {
 $(document).ready(function() {
     const HOST = "";
     var shelterScoreScale = 1;
+    var hls = null;
 
 
     function tryParseJson(text) {
@@ -1431,6 +1433,10 @@ $(document).ready(function() {
     }
 
     function closePopupCctv() {
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
         cctvOverlay.setPosition(undefined);
         popupCctvCloser.blur();
     }
@@ -1634,18 +1640,31 @@ $(document).ready(function() {
                 info = match[1];
             }
             
-            let proxyIndex = tv.url.indexOf('proxy/');
-            if (proxyIndex >= 0) {
-                let srcRoute = tv.url.substr(proxyIndex + 6);
-                linkCctvError.attr('href', "http://cctvsec.ktict.co.kr/" + srcRoute);
-            }
-            else {
                 linkCctvError.attr('href', "https://neurowhai.tistory.com/346");
-            }
 
             $("#txtCctvName").text(title);
             $("#txtCctvInfo").text(info);
-            $("#movCctv").attr('src', tv.url);
+            
+            let movElm = $("#movCctv").get(0);
+            movElm.setAttribute('src', '');
+            if (movElm.canPlayType('application/vnd.apple.mpegurl')) {
+                movElm.setAttribute('src', tv.url);
+            }
+            else if (Hls.isSupported()) {
+                if (hls) {
+                    hls.destroy();
+                }
+                hls = new Hls();
+                hls.on(Hls.Events.ERROR, function(evtName, data) {
+                    console.log(data);
+                    if (data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR) {
+                        hls.stopLoad();
+                        setTimeout(() => hls?.loadSource(tv.url), 5000);
+                    }
+                });
+                hls.loadSource(tv.url);
+                hls.attachMedia(movElm);
+            }
 
             closeLoadingDialog();
 
