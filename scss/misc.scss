@@ -136,7 +136,7 @@ body, main, .map-box, #dlgLoading {
     box-shadow: 0 3px 5px rgba(126, 111, 111, 0.39);
     margin: 12px 0 0 0;
     width: 320px;
-    height: 240px;
+    max-height: 240px;
 }
 
 .bad-reason {
