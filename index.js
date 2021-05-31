@@ -1647,10 +1647,7 @@ $(document).ready(function() {
             
             let movElm = $("#movCctv").get(0);
             movElm.setAttribute('src', '');
-            if (movElm.canPlayType('application/vnd.apple.mpegurl')) {
-                movElm.setAttribute('src', tv.url);
-            }
-            else if (Hls.isSupported()) {
+            if (Hls.isSupported()) {
                 if (hls) {
                     hls.destroy();
                 }
@@ -1664,6 +1661,9 @@ $(document).ready(function() {
                 });
                 hls.loadSource(tv.url);
                 hls.attachMedia(movElm);
+            }
+            else if (movElm.canPlayType('application/vnd.apple.mpegurl')) {
+                movElm.setAttribute('src', tv.url);
             }
 
             closeLoadingDialog();
